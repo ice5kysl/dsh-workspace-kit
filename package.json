@@ -30,6 +30,15 @@
     "workspace",
     "spotlight"
   ],
+  "author": "ice5kysl",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ice5kysl/dsh-workspace-kit.git"
+  },
+  "homepage": "https://github.com/ice5kysl/dsh-workspace-kit",
+  "bugs": {
+    "url": "https://github.com/ice5kysl/dsh-workspace-kit/issues"
+  },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
@@ -46,6 +55,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepare": "npm run build",
     "prepack": "npm run build"
   },
   "devDependencies": {

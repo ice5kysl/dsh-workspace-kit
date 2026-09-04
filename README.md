@@ -1,5 +1,7 @@
 # dsh-workspace-kit
 
+> 🏠 GitHub：<https://github.com/ice5kysl/dsh-workspace-kit> ｜ 📦 MIT License ｜ 目标 dsh：`@deepseek-ai/dsh` ≥ 0.1.1-rc.2
+
 按官方规范编写的 **dsh（DeepSeek Harness）插件**（bundle 形态），解决两个痛点：
 
 1. **工作区太多、难找** → **⌘K / Ctrl+K Spotlight 搜索**：模糊搜索全部工作区与会话（含未归组、已归档），↑↓ 选择、回车**直接打开/跳转**。
@@ -22,7 +24,10 @@
 前置：`dsh` 在 PATH（`@deepseek-ai/dsh` ≥ 0.1.1-rc.2），Node 20+。
 
 ```bash
-# 1. 构建（产出 lib/index.js + lib/client.js）
+# 0. 获取源码（或直接使用本地目录）
+git clone https://github.com/ice5kysl/dsh-workspace-kit && cd dsh-workspace-kit
+
+# 1. 构建（产出 lib/index.js + lib/client.js；npm install 的 prepare 钩子会自动构建）
 npm install                # 安装构建期依赖（typescript/esbuild/@types 等）
 npm run build
 
