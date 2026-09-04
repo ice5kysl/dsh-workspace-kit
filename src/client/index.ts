@@ -28,6 +28,7 @@ import type {
 } from '@deepseek-ai/dsh-client-runtime/client'
 import { createArchiveStore } from './archive-store.ts'
 import { DialogHost, requestConfirm, requestPrompt } from './dialogs.tsx'
+import { L } from './locale.ts'
 import { SidebarToggle } from './SidebarToggle.tsx'
 import { SpotlightPalette } from './Spotlight.tsx'
 import { WorkspaceSidebar } from './WorkspaceSidebar.tsx'
@@ -65,7 +66,7 @@ function readPersistedOfficialSidebar(): boolean {
 }
 
 function alertError(prefix: string, error: unknown): void {
-  void requestConfirm({ title: prefix, message: String(error), okLabel: '知道了' })
+  void requestConfirm({ title: prefix, message: String(error), okLabel: L('知道了', 'Got it') })
 }
 
 export function apply(raw: Context): void {
@@ -81,15 +82,15 @@ export function apply(raw: Context): void {
     ctx.workspaces.startSession(workspaceId)
   }
   const renameSession = async (sessionId: SessionId, initial?: string): Promise<void> => {
-    const title = await requestPrompt({ title: '重命名会话', initial, placeholder: '输入新名称' })
+    const title = await requestPrompt({ title: L('重命名会话', 'Rename session'), initial, placeholder: L('输入新名称', 'Enter a new name') })
     if (title == null) return
     const session = ctx.sessions.binding(sessionId)?.session
     if (!session) {
-      alertError('重命名失败', new Error(`unknown session "${sessionId}"`))
+      alertError(L('重命名失败', 'Rename failed'), new Error(`unknown session "${sessionId}"`))
       return
     }
     const result = await session.rename(title)
-    if (!result.ok) alertError('重命名失败', new Error(result.error.message))
+    if (!result.ok) alertError(L('重命名失败', 'Rename failed'), new Error(result.error.message))
   }
   const forkSession = (sessionId: SessionId): void => {
     ctx.sessions.fork({ sessionId, increaseTitle: true })
@@ -100,10 +101,12 @@ export function apply(raw: Context): void {
   const archiveSession = (sessionId: SessionId): void => {
     void (async () => {
       const ok = await requestConfirm({
-        title: '归档会话',
-        message:
+        title: L('归档会话', 'Archive session'),
+        message: L(
           '归档后该会话会从工作区分组、侧栏和所有列表隐藏（官方归档集，不可逆，暂无恢复入口；仍可通过搜索打开）。确定归档？',
-        okLabel: '归档',
+          'Archiving hides this session from workspace groups, the sidebar, and every list (official archive set — irreversible, no restore entry yet; it stays reachable via search). Archive now?',
+        ),
+        okLabel: L('归档', 'Archive'),
       })
       if (!ok) return
       ctx.workspaces.archiveSession(sessionId)
@@ -119,39 +122,42 @@ export function apply(raw: Context): void {
         const view = await ctx.workspaces.create({ path })
         startSession(view.workspaceId)
       } catch (error) {
-        alertError('新建工作区失败', error)
+        alertError(L('新建工作区失败', 'Failed to create workspace'), error)
       }
     })()
   }
   const renameWorkspace = async (workspaceId: WorkspaceId, initial?: string): Promise<void> => {
-    const title = await requestPrompt({ title: '重命名工作区', initial, placeholder: '输入新名称' })
+    const title = await requestPrompt({ title: L('重命名工作区', 'Rename workspace'), initial, placeholder: L('输入新名称', 'Enter a new name') })
     if (title == null) return
     try {
       await ctx.workspaces.rename(workspaceId, title)
     } catch (error) {
-      alertError('重命名失败', error)
+      alertError(L('重命名失败', 'Rename failed'), error)
     }
   }
   const deleteWorkspace = (workspaceId: WorkspaceId): void => {
     void (async () => {
       const ok = await requestConfirm({
-        title: '删除工作区注册',
-        message: '项目目录与历史会话都会保留（会话回到未归组）。确定删除该工作区注册？',
-        okLabel: '删除',
+        title: L('删除工作区注册', 'Remove workspace registration'),
+        message: L(
+          '项目目录与历史会话都会保留（会话回到未归组）。确定删除该工作区注册？',
+          'The project directory and past sessions are kept (sessions return to ungrouped). Remove this workspace registration?',
+        ),
+        okLabel: L('删除', 'Remove'),
       })
       if (!ok) return
       ctx.workspaces.delete(workspaceId)
-        .catch((error: unknown) => alertError('删除失败', error))
+        .catch((error: unknown) => alertError(L('删除失败', 'Remove failed'), error))
     })()
   }
   // 拖拽排序：持久化到官方 registry 顺序（等价内置"手动排序"）。
   const reorderWorkspace = (workspaceId: WorkspaceId, beforeWorkspaceId?: WorkspaceId): void => {
     ctx.workspaces.insertBefore(workspaceId, beforeWorkspaceId)
-      .catch((error: unknown) => alertError('排序失败', error))
+      .catch((error: unknown) => alertError(L('排序失败', 'Reorder failed'), error))
   }
   const reorderSession = (workspaceId: WorkspaceId, sessionId: SessionId, beforeSessionId?: SessionId): void => {
     ctx.workspaces.insertSessionBefore(workspaceId, sessionId, beforeSessionId)
-      .catch((error: unknown) => alertError('排序失败', error))
+      .catch((error: unknown) => alertError(L('排序失败', 'Reorder failed'), error))
   }
   // 会话消息全文搜索（官方 host 内容索引）。
   const searchContent = async (query: string, signal: AbortSignal): Promise<SessionSearchResultItem[]> => {

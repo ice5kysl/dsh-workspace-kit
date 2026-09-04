@@ -12,6 +12,7 @@
 
 import type { CSSProperties } from 'react'
 import type { ArchiveState } from './archive-store.ts'
+import { L } from './locale.ts'
 
 /** Selector-shaped props provided by the renderer. */
 export interface SidebarToggleProps {
@@ -39,13 +40,16 @@ export function SidebarToggle(props: SidebarToggleProps): JSX.Element {
       style={wide ? styles.wide : styles.rail}
       title={
         official
-          ? '当前为官方侧栏 —— 点击切换到增强侧栏（归档折叠 / 拖拽排序 / 图标颜色）'
-          : '当前为增强侧栏 —— 点击切换到官方侧栏'
+          ? L(
+            '当前为官方侧栏 —— 点击切换到增强侧栏（归档折叠 / 拖拽排序 / 图标颜色）',
+            'Currently the official sidebar — click to switch to the enhanced sidebar (archive folding / drag reorder / icon colors)',
+          )
+          : L('当前为增强侧栏 —— 点击切换到官方侧栏', 'Currently the enhanced sidebar — click to switch to the official sidebar')
       }
       onClick={toggle}
     >
       <span style={styles.glyph}>{official ? '◐' : '◑'}</span>
-      {wide && <span>{official ? '增强侧栏' : '官方侧栏'}</span>}
+      {wide && <span>{official ? L('增强侧栏', 'Enhanced sidebar') : L('官方侧栏', 'Official sidebar')}</span>}
     </button>
   )
 }

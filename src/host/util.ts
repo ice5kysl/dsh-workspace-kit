@@ -5,10 +5,13 @@
  * browser client half, so this code never mutates the registry and never
  * keeps a mirror of archive state that could drift from the GUI.
  *
+ * User-facing copy is bilingual via `L()` (see `./locale.ts`).
+ *
  * @module dsh-workspace-kit/util
  */
 
 import type { Workspace, WorkspaceId } from '@deepseek-ai/dsh-workspace'
+import { detectLocale, L } from './locale.ts'
 
 /** One registry workspace enriched with cheap live facts for search/render. */
 export interface WorkspaceEntry {
@@ -26,7 +29,7 @@ export interface WorkspaceEntry {
 export interface WorkspaceMatch extends WorkspaceEntry {
   /** Lower is better. */
   readonly score: number
-  /** Human hint of which field hit. */
+  /** Human hint of which field hit (`title` | `path` | `segments` | `recent`). */
   readonly why: string
 }
 
@@ -133,9 +136,18 @@ export async function resolveOne(
   return { ok: false, reason: 'ambiguous', candidates: matches.slice(0, 8) }
 }
 
+/** Localized human label of the matched field key. */
+export function matchFieldLabel(why: string): string {
+  if (detectLocale() !== 'zh') return why
+  const zhLabels: Record<string, string> = { title: '标题', path: '路径', segments: '分段', recent: '最近活动' }
+  return zhLabels[why] ?? why
+}
+
 /** Markdown line describing one workspace entry. */
 export function entryLine(entry: WorkspaceEntry): string {
   const when = entry.updatedAt.slice(0, 10)
-  const state = entry.missingDir ? ' ⚠ 目录当前不存在' : ''
-  return `· **${entry.title}** — ${entry.path}（${entry.sessionCount} 个会话，最近 ${when}）${state}`
+  const count = entry.sessionCount
+  const missing = entry.missingDir ? L(' ⚠ 目录当前不存在', ' ⚠ directory currently missing') : ''
+  const meta = L('（{count} 个会话，最近 {when}）', ' ({count} sessions, latest {when})', { count, when })
+  return `· **${entry.title}** — ${entry.path}${meta}${missing}`
 }

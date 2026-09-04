@@ -20,6 +20,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { SessionId, WorkspaceId } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ArchiveState } from './archive-store.ts'
+import { L } from './locale.ts'
 
 /** Selector-shaped hook props provided by the renderer. */
 export interface SpotlightPaletteProps {
@@ -222,22 +223,22 @@ function buildSections(
   if (searching) {
     const secs: Section[] = []
     const wsRows = [...activeSorted, ...archivedSorted].slice(0, MAX_ROWS)
-    if (showWorkspaces && wsRows.length > 0) secs.push({ key: 'workspaces', label: '工作区', rows: wsRows })
-    if (showSessions && sessions.length > 0) secs.push({ key: 'sessions', label: '会话', rows: sessions })
+    if (showWorkspaces && wsRows.length > 0) secs.push({ key: 'workspaces', label: L('工作区', 'Workspaces'), rows: wsRows })
+    if (showSessions && sessions.length > 0) secs.push({ key: 'sessions', label: L('会话', 'Sessions'), rows: sessions })
     return secs
   }
 
   // Idle view.
   const secs: Section[] = []
   if (showWorkspaces && activeSorted.length > 0) {
-    secs.push({ key: 'workspaces', label: '工作区', rows: activeSorted.slice(0, MAX_ROWS) })
+    secs.push({ key: 'workspaces', label: L('工作区', 'Workspaces'), rows: activeSorted.slice(0, MAX_ROWS) })
   }
   if (showSessions) {
     const idleSessions = sessions.filter((s) => !s.workspaceArchived).slice(0, 30)
-    if (idleSessions.length > 0) secs.push({ key: 'sessions', label: '会话', rows: idleSessions })
+    if (idleSessions.length > 0) secs.push({ key: 'sessions', label: L('会话', 'Sessions'), rows: idleSessions })
   }
   if (showWorkspaces && archivedSorted.length > 0 && showArchived) {
-    secs.push({ key: 'archived', label: '已归档', rows: archivedSorted.slice(0, MAX_ROWS) })
+    secs.push({ key: 'archived', label: L('已归档', 'Archived'), rows: archivedSorted.slice(0, MAX_ROWS) })
   }
   return secs
 }
@@ -370,19 +371,19 @@ export function SpotlightPalette(props: SpotlightPaletteProps): JSX.Element | nu
       <div
         style={styles.panel}
         role="dialog"
-        aria-label="Spotlight 工作区搜索"
+        aria-label={L('Spotlight 工作区搜索', 'Spotlight workspace search')}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <input
           ref={inputRef}
           style={styles.input}
-          placeholder="搜索工作区或会话…（Esc 关闭）"
+          placeholder={L('搜索工作区或会话…（Esc 关闭）', 'Search workspaces or sessions… (Esc to close)')}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
             setCursor(0)
           }}
-          aria-label="搜索"
+          aria-label={L('搜索', 'Search')}
         />
         <div style={styles.chips}>
           {(['all', 'workspaces', 'sessions'] as const).map((k) => (
@@ -395,7 +396,7 @@ export function SpotlightPalette(props: SpotlightPaletteProps): JSX.Element | nu
                 setCursor(0)
               }}
             >
-              {k === 'all' ? '全部' : k === 'workspaces' ? '工作区' : '会话'}
+              {k === 'all' ? L('全部', 'All') : k === 'workspaces' ? L('工作区', 'Workspaces') : L('会话', 'Sessions')}
             </button>
           ))}
         </div>
@@ -403,8 +404,8 @@ export function SpotlightPalette(props: SpotlightPaletteProps): JSX.Element | nu
           {rowCount === 0 && (
             <div style={styles.empty}>
               {query.trim()
-                ? `没有匹配「${query}」的工作区或会话`
-                : '还没有工作区。从一个项目目录开始会话后会自动出现。'}
+                ? L('没有匹配「{q}」的工作区或会话', 'No workspaces or sessions match "{q}"', { q: query.trim() })
+                : L('还没有工作区。从一个项目目录开始会话后会自动出现。', 'No workspaces yet. Start a session from a project directory and one will appear automatically.')}
             </div>
           )}
           {display.sections.map((section) => {
@@ -441,39 +442,39 @@ export function SpotlightPalette(props: SpotlightPaletteProps): JSX.Element | nu
                           <span style={styles.rowTitleText}>
                             {row.kind === 'workspace' ? row.title : row.title}
                           </span>
-                          {isArchivedWs && <span style={styles.badgeArchived}>已归档</span>}
+                          {isArchivedWs && <span style={styles.badgeArchived}>{L('已归档', 'Archived')}</span>}
                           {row.kind === 'session' && row.running && (
-                            <span style={styles.badgeRunning}>运行中</span>
+                            <span style={styles.badgeRunning}>{L('运行中', 'Running')}</span>
                           )}
                         </div>
                         <div style={styles.rowSub}>
                           {row.kind === 'workspace'
-                            ? `${row.path} · ${row.sessionCount} 个会话 · ${row.updatedAt.slice(0, 10)}`
+                            ? `${row.path} · ${L('{n} 个会话', '{n} sessions', { n: row.sessionCount })} · ${row.updatedAt.slice(0, 10)}`
                             : row.cwd ?? ''}
                         </div>
                       </div>
                       {row.kind === 'workspace' && (
                         <button
                           style={styles.actionButton}
-                          title={isArchivedWs ? '恢复工作区' : '归档工作区（软归档，可恢复）'}
+                          title={isArchivedWs ? L('恢复工作区', 'Restore workspace') : L('归档工作区（软归档，可恢复）', 'Archive workspace (soft archive, restorable)')}
                           onMouseDown={(e) => {
                             e.stopPropagation()
                             toggleArchived(row)
                           }}
                         >
-                          {isArchivedWs ? '恢复' : '归档'}
+                          {isArchivedWs ? L('恢复', 'Restore') : L('归档', 'Archive')}
                         </button>
                       )}
                       {row.kind === 'session' && selected && (
                         <button
                           style={styles.actionButton}
-                          title="归档会话（官方归档集，不可逆：会从所有列表隐藏，仍可从搜索打开）"
+                          title={L('归档会话（官方归档集，不可逆：会从所有列表隐藏，仍可从搜索打开）', 'Archive session (official archive set — irreversible: hidden from every list, still reachable via search)')}
                           onMouseDown={(e) => {
                             e.stopPropagation()
                             archiveSession(row.id)
                           }}
                         >
-                          归档会话
+                          {L('归档会话', 'Archive session')}
                         </button>
                       )}
                     </div>
@@ -492,15 +493,15 @@ export function SpotlightPalette(props: SpotlightPaletteProps): JSX.Element | nu
                 if (e.key === 'Enter') setShowArchived(true)
               }}
             >
-              ▸ 已归档 {archivedTotal} 项（点击展开查看 / 恢复）
+              ▸ {L('已归档 {n} 项（点击展开查看 / 恢复）', 'Archived {n} — click to expand / restore', { n: archivedTotal })}
             </div>
           )}
         </div>
         <div style={styles.footer}>
-          <span>↑↓ 选择</span>
-          <span>↵ 打开</span>
-          <span>{searching ? `${rowCount} 个匹配` : `${rowCount} 项`}</span>
-          <span style={{ marginLeft: 'auto' }}>Esc 关闭</span>
+          <span>{L('↑↓ 选择', '↑↓ Navigate')}</span>
+          <span>{L('↵ 打开', '↵ Open')}</span>
+          <span>{searching ? L('{n} 个匹配', '{n} matches', { n: rowCount }) : L('{n} 项', '{n} items', { n: rowCount })}</span>
+          <span style={{ marginLeft: 'auto' }}>{L('Esc 关闭', 'Esc Close')}</span>
         </div>
       </div>
     </div>

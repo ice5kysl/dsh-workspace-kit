@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useRef, useSyncExternalStore, type CSSProperties } from 'react'
+import { L } from './locale.ts'
 
 export type DialogRequest =
   | {
@@ -129,14 +130,14 @@ export function DialogHost(): JSX.Element | null {
         )}
         <div style={styles.actions}>
           <button style={styles.button} onClick={() => settle(null)}>
-            {request.kind === 'confirm' ? '取消' : '取消'}
+            {L('取消', 'Cancel')}
           </button>
           <button
             style={{ ...styles.button, ...styles.primary }}
             onClick={ok}
             autoFocus={request.kind === 'confirm'}
           >
-            {request.okLabel ?? (request.kind === 'confirm' ? '确定' : '确定')}
+            {request.okLabel ?? L('确定', 'OK')}
           </button>
         </div>
       </div>

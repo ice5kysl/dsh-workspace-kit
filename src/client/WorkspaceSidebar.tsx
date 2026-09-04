@@ -24,6 +24,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type DragEvent } from 'react'
 import type { SessionId, SessionSearchResultItem, WorkspaceId } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ArchiveState, WorkspaceAppearance } from './archive-store.ts'
+import { L } from './locale.ts'
 
 /** Selector-shaped hook props provided by the renderer. */
 export interface WorkspaceSidebarProps {
@@ -262,7 +263,7 @@ function buildSearchHits(
       kind: 'session',
       id: String(id),
       title,
-      sub: wsId ? (wsTitleBySession.get(String(id)) ?? '') : (s.cwd ?? '未归组'),
+      sub: wsId ? (wsTitleBySession.get(String(id)) ?? '') : (s.cwd ?? L('未归组', 'Ungrouped')),
     })
   }
   return hits.slice(0, 40)
@@ -400,10 +401,10 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
   if (!wide) {
     return (
       <div style={styles.rail}>
-        <button style={styles.railButton} title="Spotlight 搜索（⌘K）" onClick={openSpotlight}>⌘</button>
+        <button style={styles.railButton} title={L('Spotlight 搜索（⌘K）', 'Spotlight search (⌘K)')} onClick={openSpotlight}>⌘</button>
         <button
           style={styles.railButton}
-          title="新建会话"
+          title={L('新建会话', 'New session')}
           onClick={() => {
             startSession()
             expandSidebar()
@@ -411,7 +412,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
         >
           +
         </button>
-        <button style={styles.railButton} title="展开侧栏" onClick={expandSidebar}>»</button>
+        <button style={styles.railButton} title={L('展开侧栏', 'Expand sidebar')} onClick={expandSidebar}>»</button>
       </div>
     )
   }
@@ -459,9 +460,9 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
             style={{ ...styles.sessionActions, display: hovered === dragKey ? 'flex' : 'none' }}
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <button style={styles.miniButton} title="重命名" onClick={(e) => { e.stopPropagation(); void renameSession(s.id, s.title) }}>✎</button>
-            <button style={styles.miniButton} title="复制会话（fork）" onClick={(e) => { e.stopPropagation(); forkSession(s.id) }}>⧉</button>
-            <button style={styles.miniButton} title="归档会话（不可逆，仍可从搜索打开）" onClick={(e) => { e.stopPropagation(); archiveSession(s.id) }}>归档</button>
+            <button style={styles.miniButton} title={L('重命名', 'Rename')} onClick={(e) => { e.stopPropagation(); void renameSession(s.id, s.title) }}>✎</button>
+            <button style={styles.miniButton} title={L('复制会话（fork）', 'Duplicate session (fork)')} onClick={(e) => { e.stopPropagation(); forkSession(s.id) }}>⧉</button>
+            <button style={styles.miniButton} title={L('归档会话（不可逆，仍可从搜索打开）', 'Archive session (irreversible, still searchable)')} onClick={(e) => { e.stopPropagation(); archiveSession(s.id) }}>{L('归档', 'Archive')}</button>
           </span>
         </div>
       )
@@ -513,7 +514,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
                 e.stopPropagation()
                 setPickerWs(picking ? null : String(ws.id))
               }}
-              title="点击修改图标 / 颜色"
+              title={L('点击修改图标 / 颜色', 'Click to change icon / color')}
             >
               {app.icon ? (
                 <span style={styles.wsIconText}>{app.icon}</span>
@@ -528,7 +529,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
           <span style={{ ...styles.wsActions, display: hovered === wsKey ? 'flex' : 'none' }} onMouseDown={(e) => e.stopPropagation()}>
             <button
               style={styles.miniButton}
-              title="设置图标 / 颜色"
+              title={L('设置图标 / 颜色', 'Set icon / color')}
               onClick={(e) => {
                 e.stopPropagation()
                 setPickerWs(picking ? null : String(ws.id))
@@ -537,7 +538,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
               🎨
             </button>
             {!ws.archived && (
-              <button style={styles.miniButton} title="在此工作区新建会话" onClick={(e) => { e.stopPropagation(); startSession(ws.id) }}>＋</button>
+              <button style={styles.miniButton} title={L('在此工作区新建会话', 'New session in this workspace')} onClick={(e) => { e.stopPropagation(); startSession(ws.id) }}>＋</button>
             )}
             <button
               style={ws.archived ? styles.restoreButton : styles.miniButton}
@@ -547,17 +548,17 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
                 else actions.archive(String(ws.id), new Date().toISOString())
               }}
             >
-              {ws.archived ? '恢复' : '归档'}
+              {ws.archived ? L('恢复', 'Restore') : L('归档', 'Archive')}
             </button>
             {!ws.archived && (
-              <button style={styles.miniButton} title="重命名工作区" onClick={(e) => { e.stopPropagation(); void renameWorkspace(ws.id, ws.title) }}>✎</button>
+              <button style={styles.miniButton} title={L('重命名工作区', 'Rename workspace')} onClick={(e) => { e.stopPropagation(); void renameWorkspace(ws.id, ws.title) }}>✎</button>
             )}
-            <button style={styles.miniButton} title="删除工作区注册（目录与历史会话保留）" onClick={(e) => { e.stopPropagation(); deleteWorkspace(ws.id) }}>🗑</button>
+            <button style={styles.miniButton} title={L('删除工作区注册（目录与历史会话保留）', 'Remove workspace registration (directory and past sessions kept)')} onClick={(e) => { e.stopPropagation(); deleteWorkspace(ws.id) }}>🗑</button>
           </span>
         </div>
         {picking && (
           <div style={styles.pickerPanel} onMouseDown={(e) => e.stopPropagation()}>
-            <div style={styles.pickerLabel}>图标</div>
+            <div style={styles.pickerLabel}>{L('图标', 'Icon')}</div>
             <div style={styles.pickerGrid}>
               {EMOJI_CHOICES.map((emoji) => (
                 <button
@@ -569,7 +570,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
                 </button>
               ))}
             </div>
-            <div style={styles.pickerLabel}>颜色</div>
+            <div style={styles.pickerLabel}>{L('颜色', 'Color')}</div>
             <div style={styles.pickerGrid}>
               {COLOR_CHOICES.map((color) => (
                 <button
@@ -587,7 +588,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
                 setPickerWs(null)
               }}
             >
-              清除图标与颜色
+              {L('清除图标与颜色', 'Clear icon and color')}
             </button>
           </div>
         )}
@@ -609,11 +610,11 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
   return (
     <div style={styles.root} onMouseLeave={() => setHovered(null)}>
       <div style={styles.header}>
-        <span style={styles.headerTitle}>工作区</span>
+        <span style={styles.headerTitle}>{L('工作区', 'Workspaces')}</span>
         <span style={styles.headerActions}>
           <button
             style={styles.headerAction}
-            title="搜索工作区 / 会话（标题、路径）"
+            title={L('搜索工作区 / 会话（标题、路径）', 'Search workspaces / sessions (title, path)')}
             onClick={() => {
               setSearchOpen((v) => !v)
               if (searchOpen) setSearchQ('')
@@ -621,8 +622,8 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
           >
             🔍
           </button>
-          <button style={styles.headerAction} title="新建工作区（选择目录）" onClick={addWorkspace}>＋</button>
-          <button style={styles.headerAction} title="Spotlight（⌘K）" onClick={openSpotlight}>⌘</button>
+          <button style={styles.headerAction} title={L('新建工作区（选择目录）', 'New workspace (pick a directory)')} onClick={addWorkspace}>＋</button>
+          <button style={styles.headerAction} title={L('Spotlight（⌘K）', 'Spotlight (⌘K)')} onClick={openSpotlight}>⌘</button>
         </span>
       </div>
 
@@ -630,7 +631,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
         <div style={styles.searchRow}>
           <input
             style={styles.searchInput}
-            placeholder="搜索工作区 / 会话…"
+            placeholder={L('搜索工作区 / 会话…', 'Search workspaces / sessions…')}
             value={searchQ}
             onChange={(e) => setSearchQ(e.target.value)}
             autoFocus
@@ -645,23 +646,23 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
             style={{ ...styles.viewPill, ...(viewMode === 'grouped' ? styles.viewPillActive : {}) }}
             onClick={() => setViewMode('grouped')}
           >
-            按工作区
+            {L('按工作区', 'By workspace')}
           </button>
           <button
             type="button"
             style={{ ...styles.viewPill, ...(viewMode === 'flat' ? styles.viewPillActive : {}) }}
             onClick={() => setViewMode('flat')}
           >
-            全部会话
+            {L('全部会话', 'All sessions')}
           </button>
           {viewMode === 'grouped' && (
             <button
               type="button"
               style={styles.viewPill}
-              title="会话排序：最近更新 或 手动（拖拽后的顺序）"
+              title={L('会话排序：最近更新 或 手动（拖拽后的顺序）', 'Session order: recently updated or manual (drag order)')}
               onClick={() => setSortMode((v) => (v === 'updated' ? 'manual' : 'updated'))}
             >
-              {sortMode === 'updated' ? '排序:最近更新' : '排序:手动'}
+              {sortMode === 'updated' ? L('排序:最近更新', 'Sort: Recent') : L('排序:手动', 'Sort: Manual')}
             </button>
           )}
         </div>
@@ -670,10 +671,10 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
       <div style={styles.scroll}>
         {searching ? (
           searchHits.length === 0 && contentHits.length === 0 && !contentLoading ? (
-            <div style={styles.empty}>没有匹配「{searchQ.trim()}」的工作区或会话</div>
+            <div style={styles.empty}>{L('没有匹配「{q}」的工作区或会话', 'No workspaces or sessions match "{q}"', { q: searchQ.trim() })}</div>
           ) : (
             <>
-              {contentLoading && <div style={styles.empty}>正在搜索会话内容…</div>}
+              {contentLoading && <div style={styles.empty}>{L('正在搜索会话内容…', 'Searching session content…')}</div>}
               {searchHits.map((hit) => (
                 <div
                   key={`${hit.kind}-${hit.id}`}
@@ -691,7 +692,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
               ))}
               {contentHits.length > 0 && (
                 <>
-                  <div style={styles.contentLabel}>会话内容命中（{contentHits.length}）</div>
+                  <div style={styles.contentLabel}>{L('会话内容命中（{n}）', 'Session content hits ({n})', { n: contentHits.length })}</div>
                   {contentHits.map((hit) => (
                     <div
                       key={`content-${hit.sessionId}`}
@@ -712,7 +713,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
         ) : viewMode === 'flat' ? (
           <div style={styles.flatWrap}>
             {flatSessions.length === 0 ? (
-              <div style={styles.empty}>还没有会话。</div>
+              <div style={styles.empty}>{L('还没有会话。', 'No sessions yet.')}</div>
             ) : (
               renderSessions(undefined, flatSessions)
             )}
@@ -720,7 +721,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
         ) : (
           <>
             {active.length === 0 && ungrouped.length === 0 && (
-              <div style={styles.empty}>还没有工作区，点右上 ＋ 新建。</div>
+              <div style={styles.empty}>{L('还没有工作区，点右上 ＋ 新建。', 'No workspaces yet — click ＋ in the top right to create one.')}</div>
             )}
             <div
               onDragOver={(e) => {
@@ -742,7 +743,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
                   }}
                 >
                   <span style={styles.wsChevron}>{ungroupedOpen ? '▾' : '▸'}</span>
-                  <span style={styles.wsTitle}>未归组</span>
+                  <span style={styles.wsTitle}>{L('未归组', 'Ungrouped')}</span>
                   <span style={styles.wsCount}>{ungrouped.length}</span>
                 </div>
                 {ungroupedOpen && <div style={styles.sessionList}>{renderSessions(undefined, ungrouped)}</div>}
@@ -753,7 +754,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
               <>
                 <div style={styles.sectionToggle} onClick={() => setArchivedOpen((v) => !v)}>
                   <span>{archivedOpen ? '▾' : '▸'}</span>
-                  <span>已归档（{archivedWs.length}）</span>
+                  <span>{L('已归档（{n}）', 'Archived ({n})', { n: archivedWs.length })}</span>
                 </div>
                 {archivedOpen && archivedWs.map((ws) => renderWsRow(ws, false))}
               </>
