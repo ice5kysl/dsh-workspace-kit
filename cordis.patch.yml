@@ -1,0 +1,10 @@
+# dsh-workspace-kit — bundle layer
+#
+# One Loader entry per package (the dsh client module system rejects multiple
+# active sources resolving to one package name), so the single `workspace-kit`
+# entry carries host apply (tools + commands), and the same enabled entry's
+# `dsh.client` metadata makes the browser load the ./client face (archive UI
+# + Spotlight).
+- insert:
+    - id: workspace-kit
+      name: dsh-workspace-kit
