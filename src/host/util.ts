@@ -147,7 +147,7 @@ export function matchFieldLabel(why: string): string {
 export function entryLine(entry: WorkspaceEntry): string {
   const when = entry.updatedAt.slice(0, 10)
   const count = entry.sessionCount
-  const missing = entry.missingDir ? L(' ⚠ 目录当前不存在', ' ⚠ directory currently missing') : ''
-  const meta = L('（{count} 个会话，最近 {when}）', ' ({count} sessions, latest {when})', { count, when })
-  return `· **${entry.title}** — ${entry.path}${meta}${missing}`
+  const missing = entry.missingDir ? L('，目录当前不存在', ', directory currently missing') : ''
+  const meta = L('（{count} 个会话，最近 {when}{missing}）', ' ({count} sessions, latest {when}{missing})', { count, when, missing })
+  return `· **${entry.title}** — ${entry.path}${meta}`
 }

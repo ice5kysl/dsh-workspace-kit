@@ -52,13 +52,13 @@ export function registerWorkspaceTools(ctx: Context): void {
       const head = matches.slice(0, limit)
       const body = head.map((m) => {
         const why = matchFieldLabel(m.why)
-        const missing = m.missingDir ? L(' ⚠ 目录当前不存在', ' ⚠ directory currently missing') : ''
+        const missing = m.missingDir ? L('，目录当前不存在', ', directory currently missing') : ''
         const meta = L(
-          '（{count} 个会话，最近 {date}，命中：{why}）',
-          ' ({count} sessions, latest {date}; matched: {why})',
-          { count: m.sessionCount, date: m.updatedAt.slice(0, 10), why },
+          '（{count} 个会话，最近 {date}，命中：{why}{missing}）',
+          ' ({count} sessions, latest {date}; matched: {why}{missing})',
+          { count: m.sessionCount, date: m.updatedAt.slice(0, 10), why, missing },
         )
-        return `· **${m.title}** — ${m.path}${meta}${missing}`
+        return `· **${m.title}** — ${m.path}${meta}`
       }).join('\n')
       const note = matches.length > limit
         ? L('\n（共 {total} 个匹配，仅显示前 {limit} 个）', '\n ({total} matches in total; showing first {limit})', {

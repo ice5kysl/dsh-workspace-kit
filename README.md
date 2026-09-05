@@ -1,12 +1,12 @@
 # dsh-workspace-kit
 
-> 🏠 GitHub: <https://github.com/ice5kysl/dsh-workspace-kit> ｜ 📦 MIT License ｜ Target dsh: `@deepseek-ai/dsh` ≥ 0.1.1-rc.2 ｜ 🌐 English · [简体中文](./README.zh-CN.md)
+> GitHub: <https://github.com/ice5kysl/dsh-workspace-kit> ｜ MIT License ｜ Target dsh: `@deepseek-ai/dsh` ≥ 0.1.1-rc.2 ｜ English · [简体中文](./README.zh-CN.md)
 
 A **dsh (DeepSeek Harness) plugin** written to official conventions, in the Cordis "bundle" form. It solves two pain points:
 
 1. **Too many workspaces, hard to find** → **⌘K / Ctrl+K Spotlight search**: fuzzy-search all workspaces and sessions (including ungrouped and archived ones), navigate with ↑↓ and press Enter to **open / jump** directly.
 2. **Want to archive old workspaces** → **soft archive** (hidden + restorable, no data deleted):
-   - **Built-in sidebar**: the plugin registers into the `sidebar.workspaces` slot at low priority (-1), **replacing the shipped workspace browser** — archived workspaces leave the "Workspaces" list and move into a collapsible "Archived (N)" section where you can restore / open / ➕ start a new session; ungrouped sessions live in their own section too.
+   - **Built-in sidebar**: the plugin registers into the `sidebar.workspaces` slot at low priority (-1), **replacing the shipped workspace browser** — archived workspaces leave the "Workspaces" list and move into a collapsible "Archived (N)" section where you can restore / open / start a new session; ungrouped sessions live in their own section too.
    - **Spotlight**: the idle list hides archived items; when you type, matching archived items appear with an "Archived" badge so you can locate and restore them.
    - Archive / restore is also available on every sidebar row and Spotlight result.
 
@@ -21,11 +21,10 @@ The plugin ships **two faces** carried by a single Loader entry (`dsh-workspace-
 
 Beyond archive/restore, the enhanced sidebar (when active) adds:
 
-- **New workspace** (＋ next to search) — system directory picker → register → open.
-- **Sidebar search** (🔍 expandable input) — filter workspaces/sessions by title and path, plus **full-text session-content search** (≥2 chars, debounced, via the official host content index).
-- **Per-workspace emoji icon + accent color** — hover a row and click 🎨 (or the icon itself); 32 emoji + 9 colors, "clear" to reset; Spotlight results show the same look (browser-persisted).
+- **New workspace** (the plus button next to search) — system directory picker → register → open.
+- **Sidebar search** (expandable input) — filter workspaces/sessions by title and path, plus **full-text session-content search** (≥2 chars, debounced, via the official host content index).
+- **Per-workspace icon + accent color** — hover a row and click the palette button (or the icon itself); 32 SVG icons + 9 colors, "clear" to reset; Spotlight results show the same look (browser-persisted).
 - **Drag reorder** — drag workspace rows → official `insertBefore`; drag sessions within their workspace → `insertSessionBefore`; once a workspace is manually dragged its sessions switch to the manual (account) order, matching the shipped Manual semantics.
-- **View pills** — Grouped by workspace / All sessions; **sort** by recency or manual (drag order).
 - **Styled dialogs** — rename / delete / archive confirmations use in-app styled dialogs instead of `prompt`/`confirm`.
 - **One-click sidebar toggle** — a footer button switches between the enhanced sidebar and the official sidebar instantly; the choice persists across restarts.
 

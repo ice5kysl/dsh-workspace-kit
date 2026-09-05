@@ -21,6 +21,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { SessionId, WorkspaceId } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ArchiveState } from './archive-store.ts'
 import { L } from './locale.ts'
+import { WorkspaceGlyph } from './icons.tsx'
 
 /** Selector-shaped hook props provided by the renderer. */
 export interface SpotlightPaletteProps {
@@ -430,11 +431,11 @@ export function SpotlightPalette(props: SpotlightPaletteProps): JSX.Element | nu
                     >
                       {row.kind === 'workspace' && (
                         <span style={styles.rowIconSlot}>
-                          {appearanceMap[String(row.id)]?.icon ? (
-                            <span>{appearanceMap[String(row.id)]?.icon}</span>
-                          ) : appearanceMap[String(row.id)]?.color ? (
-                            <span style={{ ...styles.rowColorDot, background: appearanceMap[String(row.id)]?.color }} />
-                          ) : null}
+                          <WorkspaceGlyph
+                            icon={appearanceMap[String(row.id)]?.icon}
+                            color={appearanceMap[String(row.id)]?.color}
+                            size={14}
+                          />
                         </span>
                       )}
                       <div style={styles.rowMain}>

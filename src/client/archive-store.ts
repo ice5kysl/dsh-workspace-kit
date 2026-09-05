@@ -4,7 +4,7 @@
  * - "Archiving" a workspace is a view-layer action: it hides the workspace
  *   (and its sessions) from the plugin's own surfaces and stays restorable,
  *   without deleting or mutating any host state.
- * - Per-workspace appearance: an optional emoji `icon` and/or a `color`
+ * - Per-workspace appearance: an optional SVG icon key and/or a `color`
  *   (CSS hex) shown at the row's left slot in the sidebar and Spotlight.
  *
  * Persisted in the browser via the framework store engine (localStorage,
@@ -23,7 +23,7 @@ export interface ArchiveRecord {
 
 /** Optional per-workspace look (both fields optional; clear removes the entry). */
 export interface WorkspaceAppearance {
-  /** Emoji shown at the row's icon slot. */
+  /** SVG icon key (see icons.tsx) shown at the row's icon slot. */
   readonly icon?: string
   /** CSS color (hex) used for the row icon slot background / dot. */
   readonly color?: string
