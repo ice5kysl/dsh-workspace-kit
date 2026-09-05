@@ -40,6 +40,14 @@ All user-facing copy is bilingual (Simplified Chinese / English):
 
 ## Quick install (personal dsh)
 
+Published on npm — if you already run dsh Web, install in one line:
+
+```bash
+dsh plugin --profile web add dsh-workspace-kit
+```
+
+The git route below is for development / running the latest source.
+
 Prerequisites: `dsh` on PATH (`@deepseek-ai/dsh` ≥ 0.1.1-rc.2), Node 20+.
 
 ```bash
