@@ -30,6 +30,12 @@ Beyond archive/restore, the enhanced sidebar (when active) adds:
 
 You can also say things like "use `workspace_find` to find the pms workspace" in a session, or type `/workspace-find pms`.
 
+## Screenshots
+
+| Enhanced workspace sidebar | Per-workspace icon & color picker | ⌘K Spotlight search |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/sidebar.png" width="230" alt="Enhanced workspace sidebar"> | <img src="docs/screenshots/icon-picker.png" width="230" alt="Per-workspace icon and color picker"> | <img src="docs/screenshots/spotlight.png" width="360" alt="Spotlight search palette"> |
+
 ## Languages (i18n)
 
 All user-facing copy is bilingual (Simplified Chinese / English):

@@ -30,6 +30,12 @@
 
 会话里可直接说「用 workspace_find 找一下 pms 工作区」，或输入 `/workspace-find pms`。
 
+## 截图
+
+| 增强侧栏 | 每工作区图标与颜色选择器 | ⌘K Spotlight 搜索 |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/sidebar.png" width="230" alt="增强侧栏"> | <img src="docs/screenshots/icon-picker.png" width="230" alt="每工作区图标与颜色选择器"> | <img src="docs/screenshots/spotlight.png" width="360" alt="Spotlight 搜索面板"> |
+
 ## 多语言（i18n）
 
 所有面向用户的文案均为中英双语（简体中文 / English）：
