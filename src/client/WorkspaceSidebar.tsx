@@ -183,6 +183,7 @@ function StatusGlyph({ status }: { status?: SessionStatus }): JSX.Element {
               y={y}
               width={2}
               height={2}
+              fill="#2d66f7"
               style={{ animationDelay: `${(i - CHASE_CELLS.length) * 125}ms` }}
             />
           ))}
