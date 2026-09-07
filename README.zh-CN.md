@@ -94,6 +94,7 @@ npm pack          # 产出 dsh-workspace-kit-0.1.0.tgz（含预构建 lib/，pre
 ```bash
 npm run typecheck   # tsc --noEmit（宿主 + 浏览器两侧源码）
 npm run build       # esbuild：src/host → lib/index.js；src/client → lib/client.js
+npm test            # 宿主 workspace 工具/斜杠命令独立冒烟测试
 ```
 
 源码布局：

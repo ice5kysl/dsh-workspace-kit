@@ -95,6 +95,7 @@ npm pack          # produces dsh-workspace-kit-0.1.0.tgz (prebuilt lib/; prepack
 ```bash
 npm run typecheck   # tsc --noEmit (host + client sources)
 npm run build       # esbuild: src/host → lib/index.js; src/client → lib/client.js
+npm test            # standalone smoke test of the host workspace tools/slash commands
 ```
 
 Source layout:
