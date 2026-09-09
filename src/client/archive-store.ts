@@ -13,7 +13,7 @@
  * @module dsh-workspace-kit/archive-store
  */
 
-import { defineStore } from '@deepseek-ai/dsh-client-runtime/client'
+import { defineStore } from '@deepseek-ai/dsh-client-store'
 
 /** Durable record of one archived workspace. */
 export interface ArchiveRecord {

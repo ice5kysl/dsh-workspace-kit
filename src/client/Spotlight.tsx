@@ -18,7 +18,8 @@
  */
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import type { SessionId, WorkspaceId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { WorkspaceId } from '@deepseek-ai/dsh-api-workspace-controller/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ArchiveState } from './archive-store.ts'
 import { L } from './locale.ts'
 import { WorkspaceGlyph } from './icons.tsx'

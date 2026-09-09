@@ -29,7 +29,9 @@
  */
 
 import { useEffect, useMemo, useState, type CSSProperties, type DragEvent } from 'react'
-import type { SessionId, SessionSearchResultItem, WorkspaceId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SessionSearchResultItem } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { WorkspaceId } from '@deepseek-ai/dsh-api-workspace-controller/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ArchiveState, WorkspaceAppearance } from './archive-store.ts'
 import { L } from './locale.ts'
 import { ChevronDown, ChevronRight, ChevronsRight, Command, Copy, Palette, Pencil, Plus, Search, Trash2 } from 'lucide-react'

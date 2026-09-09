@@ -19,13 +19,9 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import type {
-  ISessions,
-  IWorkspaces,
-  SessionId,
-  SessionSearchResultItem,
-  WorkspaceId,
-} from '@deepseek-ai/dsh-client-runtime/client'
+import type { ISessions, SessionSearchResultItem } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { IWorkspaces, WorkspaceId } from '@deepseek-ai/dsh-api-workspace-controller/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { createArchiveStore } from './archive-store.ts'
 import { DialogHost, requestConfirm, requestPrompt } from './dialogs.tsx'
 import { L } from './locale.ts'
@@ -34,7 +30,7 @@ import { SpotlightPalette } from './Spotlight.tsx'
 import { WorkspaceSidebar } from './WorkspaceSidebar.tsx'
 
 export const name = 'workspace-kit'
-export const inject = ['slots', 'sessions', 'workspaces'] as const
+export const inject = ['slots', 'sessions', 'workspaces', 'uiWorkspace'] as const
 
 const PERSIST_KEY = 'dsh.workspace-kit.archive.v1'
 
@@ -52,6 +48,15 @@ interface ClientCtxLike {
   slots: SlotsLike
   sessions: ISessions
   workspaces: IWorkspaces
+  uiWorkspace: UiWorkspaceLike
+}
+
+/** Cross-controller navigation/directory capability (dsh-client-ui-workspace). */
+interface UiWorkspaceLike {
+  /** Start the official New Session flow and navigate to its Session. */
+  startSession(workspaceId?: WorkspaceId): void
+  /** Open the host-native directory picker; null when cancelled. */
+  pickDirectory(): Promise<string | null>
 }
 
 /** Persisted sidebar choice (official vs plugin), read once at boot. */
@@ -79,7 +84,7 @@ export function apply(raw: Context): void {
     ctx.sessions.open(sessionId)
   }
   const startSession = (workspaceId?: WorkspaceId): void => {
-    ctx.workspaces.startSession(workspaceId)
+    ctx.uiWorkspace.startSession(workspaceId)
   }
   const renameSession = async (sessionId: SessionId, initial?: string): Promise<void> => {
     const title = await requestPrompt({ title: L('重命名会话', 'Rename session'), initial, placeholder: L('输入新名称', 'Enter a new name') })
@@ -117,7 +122,7 @@ export function apply(raw: Context): void {
   const addWorkspace = (): void => {
     void (async () => {
       try {
-        const path = await ctx.workspaces.pickDirectory()
+        const path = await ctx.uiWorkspace.pickDirectory()
         if (!path) return
         const view = await ctx.workspaces.create({ path })
         startSession(view.workspaceId)
