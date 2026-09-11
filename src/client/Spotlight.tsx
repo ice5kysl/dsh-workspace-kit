@@ -649,7 +649,7 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: '16px',
     padding: '0 6px',
     borderRadius: 8,
-    background: '#eef1f6',
+    background: 'var(--dsw-alias-interactive-bg-hover, #eef1f6)',
     color: '#5a6478',
     flexShrink: 0,
   },
