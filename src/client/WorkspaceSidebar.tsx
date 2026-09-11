@@ -922,7 +922,7 @@ const styles: Record<string, CSSProperties> = {
   sessionTitle: { flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--dsw-alias-label-secondary, inherit)' },
   miniButton: {
     fontSize: 11, lineHeight: '16px', padding: '0 6px', borderRadius: 6,
-    border: '1px solid var(--border, rgba(28, 35, 51, 0.12))', background: 'var(--bg, #ffffff)', color: 'var(--fg-muted, #5a6478)', cursor: 'pointer',
+    border: '1px solid var(--dsw-alias-border-l2, rgba(28, 35, 51, 0.12))', background: 'var(--dsw-alias-bg-layer-1, #ffffff)', color: 'var(--dsw-alias-label-secondary, #5a6478)', cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4,
   },
   restoreButton: {
@@ -943,7 +943,7 @@ const styles: Record<string, CSSProperties> = {
   },
   pickerPanel: {
     margin: '2px 4px 6px 26px', padding: 8, borderRadius: 10,
-    background: 'var(--bg, #f5f7fa)', border: '1px solid var(--border, rgba(28, 35, 51, 0.08))',
+    background: 'var(--dsw-alias-bg-layer-1, #f5f7fa)', border: '1px solid var(--dsw-alias-border-l1, rgba(28, 35, 51, 0.08))',
   },
   pickerLabel: { fontSize: 11, fontWeight: 600, color: 'var(--dsw-alias-label-tertiary, #8a93a6)', margin: '4px 0' },
   pickerGrid: { display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 2 },
@@ -959,6 +959,6 @@ const styles: Record<string, CSSProperties> = {
   pickerSelected: { outline: '2px solid #2d66f7', outlineOffset: 1 },
   pickerClear: {
     marginTop: 6, fontSize: 11, padding: '2px 10px', borderRadius: 7,
-    border: '1px solid var(--border, rgba(28, 35, 51, 0.14))', background: 'var(--bg, #ffffff)', color: 'var(--fg-muted, #5a6478)', cursor: 'pointer',
+    border: '1px solid var(--dsw-alias-border-l2, rgba(28, 35, 51, 0.14))', background: 'var(--dsw-alias-bg-layer-1, #ffffff)', color: 'var(--dsw-alias-label-secondary, #5a6478)', cursor: 'pointer',
   },
 }
