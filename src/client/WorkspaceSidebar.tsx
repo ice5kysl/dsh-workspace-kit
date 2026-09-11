@@ -139,6 +139,8 @@ const STATUS_CSS = [
   '.dsh-wskit-matrix{display:block}',
   '.dsh-wskit-cell{fill:currentColor;opacity:.15;animation:dsh-wskit-chase 1s linear infinite}',
   '@media (prefers-reduced-motion:reduce){.dsh-wskit-cell{animation:none}.dsh-wskit-matrix{display:none}.dsh-wskit-ongoing:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}}',
+  '.dsh-wskit-menu-item{transition:background .12s ease}',
+  '.dsh-wskit-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover, rgba(28,35,51,0.07))}',
 ].join('\n')
 
 /** Inject the tiny chase keyframes once (browser face only; id-guarded). */
@@ -537,14 +539,14 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
           </span>
           {menu === dragKey && (
             <div style={styles.rowMenu} onMouseDown={(e) => e.stopPropagation()}>
-              <button style={styles.menuItem} onClick={(e) => { e.stopPropagation(); setMenu(null); void renameSession(s.id, s.title) }}>
+              <button style={styles.menuItem} className="dsh-wskit-menu-item" onClick={(e) => { e.stopPropagation(); setMenu(null); void renameSession(s.id, s.title) }}>
                 <Pencil size={12} />{L('重命名', 'Rename')}
               </button>
-              <button style={styles.menuItem} onClick={(e) => { e.stopPropagation(); setMenu(null); forkSession(s.id) }}>
+              <button style={styles.menuItem} className="dsh-wskit-menu-item" onClick={(e) => { e.stopPropagation(); setMenu(null); forkSession(s.id) }}>
                 <Copy size={12} />{L('复制会话（fork）', 'Duplicate (fork)')}
               </button>
               <button
-                style={{ ...styles.menuItem, ...styles.menuItemDanger }}
+                style={{ ...styles.menuItem, ...styles.menuItemDanger }} className="dsh-wskit-menu-item"
                 title={L('不可逆，仍可从搜索打开', 'Irreversible, still searchable')}
                 onClick={(e) => { e.stopPropagation(); setMenu(null); archiveSession(s.id) }}
               >
@@ -627,15 +629,15 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
           {menu === wsKey && (
             <div style={styles.rowMenu} onMouseDown={(e) => e.stopPropagation()}>
               {!ws.archived && (
-                <button style={styles.menuItem} onClick={(e) => { e.stopPropagation(); setMenu(null); startSession(ws.id) }}>
+                <button style={styles.menuItem} className="dsh-wskit-menu-item" onClick={(e) => { e.stopPropagation(); setMenu(null); startSession(ws.id) }}>
                   <Plus size={12} />{L('新建会话', 'New session')}
                 </button>
               )}
-              <button style={styles.menuItem} onClick={(e) => { e.stopPropagation(); setMenu(null); setPickerWs(picking ? null : String(ws.id)) }}>
+              <button style={styles.menuItem} className="dsh-wskit-menu-item" onClick={(e) => { e.stopPropagation(); setMenu(null); setPickerWs(picking ? null : String(ws.id)) }}>
                 <Palette size={12} />{L('图标 / 颜色', 'Icon / color')}
               </button>
               {!ws.archived && (
-                <button style={styles.menuItem} onClick={(e) => { e.stopPropagation(); setMenu(null); void renameWorkspace(ws.id, ws.title) }}>
+                <button style={styles.menuItem} className="dsh-wskit-menu-item" onClick={(e) => { e.stopPropagation(); setMenu(null); void renameWorkspace(ws.id, ws.title) }}>
                   <Pencil size={12} />{L('重命名', 'Rename')}
                 </button>
               )}
@@ -651,7 +653,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
                 {ws.archived ? <><ArchiveRestore size={12} />{L('恢复此工作区', 'Restore workspace')}</> : <><Archive size={12} />{L('归档（软归档，可恢复）', 'Archive (soft, restorable)')}</>}
               </button>
               <button
-                style={{ ...styles.menuItem, ...styles.menuItemDanger }}
+                style={{ ...styles.menuItem, ...styles.menuItemDanger }} className="dsh-wskit-menu-item"
                 title={L('目录与历史会话保留', 'Directory and past sessions kept')}
                 onClick={(e) => { e.stopPropagation(); setMenu(null); deleteWorkspace(ws.id) }}
               >
@@ -883,41 +885,41 @@ const styles: Record<string, CSSProperties> = {
   },
   wsChevron: {
     width: 14, flexShrink: 0, display: 'inline-flex', alignItems: 'center',
-    justifyContent: 'center', color: '#9aa3b5',
+    justifyContent: 'center', color: 'var(--dsw-alias-label-tertiary, #9aa3b5)',
   },
   wsTitle: {
-    flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, color: '#2e3a4d', lineHeight: '20px',
+    flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, color: 'var(--dsw-alias-label-primary, #2e3a4d)', lineHeight: '20px',
     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
   },
-  wsCount: { fontSize: 12, fontWeight: 500, color: '#8a93a6', flexShrink: 0 },
+  wsCount: { fontSize: 12, fontWeight: 500, color: 'var(--dsw-alias-label-tertiary, #8a93a6)', flexShrink: 0 },
   wsActions: { display: 'none', gap: 2, alignItems: 'center', flexShrink: 0 },
   kebab: {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     width: 20, height: 20, borderRadius: 6, border: 'none', cursor: 'pointer',
-    background: 'transparent', color: 'var(--fg-muted, #5a6478)',
+    background: 'transparent', color: 'var(--dsw-alias-label-tertiary, var(--fg-muted, #5a6478))',
   },
   rowMenu: {
     position: 'absolute', right: 6, top: '100%', zIndex: 30, minWidth: 168,
     display: 'flex', flexDirection: 'column', gap: 1, padding: 4, borderRadius: 9,
-    background: 'var(--bg, #ffffff)', border: '1px solid var(--border, rgba(28, 35, 51, 0.12))',
-    boxShadow: '0 6px 20px rgba(15, 23, 42, 0.16)',
+    background: 'var(--dsw-alias-bg-layer-2, var(--bg, #ffffff))', border: '1px solid var(--dsw-alias-border-l2, var(--border, rgba(28, 35, 51, 0.12)))',
+    boxShadow: '0 6px 20px rgba(0, 0, 0, 0.22)',
   },
   menuItem: {
     display: 'flex', alignItems: 'center', gap: 7, padding: '5px 8px', borderRadius: 6,
     fontSize: 12, border: 'none', textAlign: 'left', cursor: 'pointer',
-    background: 'transparent', color: 'var(--fg, #3c4659)',
+    background: 'transparent', color: 'var(--dsw-alias-label-primary, var(--fg, #3c4659))',
   },
-  menuItemDanger: { color: '#dc2626' },
+  menuItemDanger: { color: 'var(--dsw-alias-state-error-primary, #dc2626)' },
   sessionActions: { display: 'none', gap: 2, alignItems: 'center', flexShrink: 0 },
   sessionList: { marginLeft: 10, borderLeft: '1px solid rgba(28, 35, 51, 0.07)' },
   sessionRow: {
     position: 'relative',
     display: 'flex', alignItems: 'center', gap: 6, padding: '3px 4px', borderRadius: 6,
-    cursor: 'pointer', fontSize: 12, color: 'var(--fg, #3c4659)', userSelect: 'none',
+    cursor: 'pointer', fontSize: 12, color: 'var(--dsw-alias-label-primary, var(--fg, #3c4659))', userSelect: 'none',
   },
   statusSlot: { width: 10, height: 10, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
   stateDot: { width: 6, height: 6, borderRadius: 3, flexShrink: 0 },
-  sessionTitle: { flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  sessionTitle: { flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--dsw-alias-label-secondary, inherit)' },
   miniButton: {
     fontSize: 11, lineHeight: '16px', padding: '0 6px', borderRadius: 6,
     border: '1px solid var(--border, rgba(28, 35, 51, 0.12))', background: 'var(--bg, #ffffff)', color: 'var(--fg-muted, #5a6478)', cursor: 'pointer',
@@ -943,7 +945,7 @@ const styles: Record<string, CSSProperties> = {
     margin: '2px 4px 6px 26px', padding: 8, borderRadius: 10,
     background: 'var(--bg, #f5f7fa)', border: '1px solid var(--border, rgba(28, 35, 51, 0.08))',
   },
-  pickerLabel: { fontSize: 11, fontWeight: 600, color: '#8a93a6', margin: '4px 0' },
+  pickerLabel: { fontSize: 11, fontWeight: 600, color: 'var(--dsw-alias-label-tertiary, #8a93a6)', margin: '4px 0' },
   pickerGrid: { display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 2 },
   pickerIcon: {
     width: 26, height: 26, borderRadius: 7,

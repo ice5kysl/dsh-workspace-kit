@@ -1,6 +1,6 @@
 {
   "name": "dsh-workspace-kit",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "dsh (DeepSeek Harness) workspace kit: soft workspace archive/restore, ⌘K Spotlight search, per-workspace icons/colors, and an enhanced sidebar browser with drag reorder — a standard Cordis bundle plugin (host tools/commands + bilingual browser client).",
   "type": "module",
   "main": "lib/index.js",
