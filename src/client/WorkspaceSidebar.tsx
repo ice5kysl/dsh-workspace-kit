@@ -34,7 +34,7 @@ import type { WorkspaceId } from '@deepseek-ai/dsh-api-workspace-controller/clie
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ArchiveState, WorkspaceAppearance } from './archive-store.ts'
 import { L } from './locale.ts'
-import { ChevronDown, ChevronRight, ChevronsRight, Command, Copy, MoreVertical, Palette, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, ChevronDown, ChevronRight, ChevronsRight, Command, Copy, MoreVertical, Palette, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { WORKSPACE_ICON_KEYS, WorkspaceGlyph, iconKeyOf } from './icons.tsx'
 
 /** Selector-shaped hook props provided by the renderer. */
@@ -548,7 +548,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
                 title={L('不可逆，仍可从搜索打开', 'Irreversible, still searchable')}
                 onClick={(e) => { e.stopPropagation(); setMenu(null); archiveSession(s.id) }}
               >
-                {L('归档会话', 'Archive session')}
+                <><Archive size={12} />{L('归档会话', 'Archive session')}</>
               </button>
             </div>
           )}
@@ -648,7 +648,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
                   else actions.archive(String(ws.id), new Date().toISOString())
                 }}
               >
-                {ws.archived ? L('恢复此工作区', 'Restore workspace') : L('归档（软归档，可恢复）', 'Archive (soft, restorable)')}
+                {ws.archived ? <><ArchiveRestore size={12} />{L('恢复此工作区', 'Restore workspace')}</> : <><Archive size={12} />{L('归档（软归档，可恢复）', 'Archive (soft, restorable)')}</>}
               </button>
               <button
                 style={{ ...styles.menuItem, ...styles.menuItemDanger }}
