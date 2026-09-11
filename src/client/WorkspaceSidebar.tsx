@@ -34,7 +34,7 @@ import type { WorkspaceId } from '@deepseek-ai/dsh-api-workspace-controller/clie
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ArchiveState, WorkspaceAppearance } from './archive-store.ts'
 import { L } from './locale.ts'
-import { ChevronDown, ChevronRight, ChevronsRight, Command, Copy, Palette, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, ChevronsRight, Command, Copy, MoreVertical, Palette, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { WORKSPACE_ICON_KEYS, WorkspaceGlyph, iconKeyOf } from './icons.tsx'
 
 /** Selector-shaped hook props provided by the renderer. */
@@ -349,6 +349,10 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
   const [archivedOpen, setArchivedOpen] = useState(false)
   const [ungroupedOpen, setUngroupedOpen] = useState(false)
   const [hovered, setHovered] = useState<string | null>(null)
+  // Row action menu ("···"): row key of the open vertical menu. Opening on
+  // kebab hover, closing on row leave or after an action — pointer-safe
+  // because the absolutely-positioned menu stays inside the row subtree.
+  const [menu, setMenu] = useState<string | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQ, setSearchQ] = useState('')
   // Session ordering: 'updated' (recency) or 'manual' (durable account order).
@@ -489,6 +493,10 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
           title={s.title}
           draggable={wsId !== undefined}
           onMouseEnter={() => setHovered(dragKey)}
+          onMouseLeave={() => {
+            setHovered((v) => (v === dragKey ? null : v))
+            setMenu((v) => (v === dragKey ? null : v))
+          }}
           onMouseDown={(e) => {
             e.stopPropagation()
             openSession(s.id)
@@ -515,13 +523,35 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
           <StatusGlyph status={s.status} />
           <span style={styles.sessionTitle}>{s.title}</span>
           <span
-            style={{ ...styles.sessionActions, display: hovered === dragKey ? 'flex' : 'none' }}
+            style={{ ...styles.sessionActions, display: hovered === dragKey || menu === dragKey ? 'flex' : 'none' }}
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <button style={styles.miniButton} title={L('重命名', 'Rename')} onClick={(e) => { e.stopPropagation(); void renameSession(s.id, s.title) }}><Pencil size={11} /></button>
-            <button style={styles.miniButton} title={L('复制会话（fork）', 'Duplicate session (fork)')} onClick={(e) => { e.stopPropagation(); forkSession(s.id) }}><Copy size={11} /></button>
-            <button style={styles.miniButton} title={L('归档会话（不可逆，仍可从搜索打开）', 'Archive session (irreversible, still searchable)')} onClick={(e) => { e.stopPropagation(); archiveSession(s.id) }}>{L('归档', 'Archive')}</button>
+            <button
+              style={styles.kebab}
+              title={L('更多操作', 'More actions')}
+              onMouseEnter={() => setMenu(dragKey)}
+              onClick={(e) => { e.stopPropagation(); setMenu(menu === dragKey ? null : dragKey) }}
+            >
+              <MoreVertical size={13} />
+            </button>
           </span>
+          {menu === dragKey && (
+            <div style={styles.rowMenu} onMouseDown={(e) => e.stopPropagation()}>
+              <button style={styles.menuItem} onClick={(e) => { e.stopPropagation(); setMenu(null); void renameSession(s.id, s.title) }}>
+                <Pencil size={12} />{L('重命名', 'Rename')}
+              </button>
+              <button style={styles.menuItem} onClick={(e) => { e.stopPropagation(); setMenu(null); forkSession(s.id) }}>
+                <Copy size={12} />{L('复制会话（fork）', 'Duplicate (fork)')}
+              </button>
+              <button
+                style={{ ...styles.menuItem, ...styles.menuItemDanger }}
+                title={L('不可逆，仍可从搜索打开', 'Irreversible, still searchable')}
+                onClick={(e) => { e.stopPropagation(); setMenu(null); archiveSession(s.id) }}
+              >
+                {L('归档会话', 'Archive session')}
+              </button>
+            </div>
+          )}
         </div>
       )
     })
@@ -542,6 +572,10 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
           }}
           draggable={draggable}
           onMouseEnter={() => setHovered(wsKey)}
+          onMouseLeave={() => {
+            setHovered((v) => (v === wsKey ? null : v))
+            setMenu((v) => (v === wsKey ? null : v))
+          }}
           onMouseDown={(e) => {
             e.stopPropagation()
             toggle(wsKey)
@@ -580,35 +614,51 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
           <span style={styles.wsChevron}>{isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
           <span style={styles.wsTitle}>{ws.title}</span>
           <span style={styles.wsCount}>{ws.sessionCount}</span>
-          <span style={{ ...styles.wsActions, display: hovered === wsKey ? 'flex' : 'none' }} onMouseDown={(e) => e.stopPropagation()}>
+          <span style={{ ...styles.wsActions, display: hovered === wsKey || menu === wsKey ? 'flex' : 'none' }} onMouseDown={(e) => e.stopPropagation()}>
             <button
-              style={styles.miniButton}
-              title={L('设置图标 / 颜色', 'Set icon / color')}
-              onClick={(e) => {
-                e.stopPropagation()
-                setPickerWs(picking ? null : String(ws.id))
-              }}
+              style={styles.kebab}
+              title={L('更多操作', 'More actions')}
+              onMouseEnter={() => setMenu(wsKey)}
+              onClick={(e) => { e.stopPropagation(); setMenu(menu === wsKey ? null : wsKey) }}
             >
-              <Palette size={11} />
+              <MoreVertical size={13} />
             </button>
-            {!ws.archived && (
-              <button style={styles.miniButton} title={L('在此工作区新建会话', 'New session in this workspace')} onClick={(e) => { e.stopPropagation(); startSession(ws.id) }}><Plus size={11} /></button>
-            )}
-            <button
-              style={ws.archived ? styles.restoreButton : styles.miniButton}
-              onClick={(e) => {
-                e.stopPropagation()
-                if (ws.archived) actions.restore(String(ws.id))
-                else actions.archive(String(ws.id), new Date().toISOString())
-              }}
-            >
-              {ws.archived ? L('恢复', 'Restore') : L('归档', 'Archive')}
-            </button>
-            {!ws.archived && (
-              <button style={styles.miniButton} title={L('重命名工作区', 'Rename workspace')} onClick={(e) => { e.stopPropagation(); void renameWorkspace(ws.id, ws.title) }}><Pencil size={11} /></button>
-            )}
-            <button style={styles.miniButton} title={L('删除工作区注册（目录与历史会话保留）', 'Remove workspace registration (directory and past sessions kept)')} onClick={(e) => { e.stopPropagation(); deleteWorkspace(ws.id) }}><Trash2 size={11} /></button>
           </span>
+          {menu === wsKey && (
+            <div style={styles.rowMenu} onMouseDown={(e) => e.stopPropagation()}>
+              {!ws.archived && (
+                <button style={styles.menuItem} onClick={(e) => { e.stopPropagation(); setMenu(null); startSession(ws.id) }}>
+                  <Plus size={12} />{L('新建会话', 'New session')}
+                </button>
+              )}
+              <button style={styles.menuItem} onClick={(e) => { e.stopPropagation(); setMenu(null); setPickerWs(picking ? null : String(ws.id)) }}>
+                <Palette size={12} />{L('图标 / 颜色', 'Icon / color')}
+              </button>
+              {!ws.archived && (
+                <button style={styles.menuItem} onClick={(e) => { e.stopPropagation(); setMenu(null); void renameWorkspace(ws.id, ws.title) }}>
+                  <Pencil size={12} />{L('重命名', 'Rename')}
+                </button>
+              )}
+              <button
+                style={styles.menuItem}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMenu(null)
+                  if (ws.archived) actions.restore(String(ws.id))
+                  else actions.archive(String(ws.id), new Date().toISOString())
+                }}
+              >
+                {ws.archived ? L('恢复此工作区', 'Restore workspace') : L('归档（软归档，可恢复）', 'Archive (soft, restorable)')}
+              </button>
+              <button
+                style={{ ...styles.menuItem, ...styles.menuItemDanger }}
+                title={L('目录与历史会话保留', 'Directory and past sessions kept')}
+                onClick={(e) => { e.stopPropagation(); setMenu(null); deleteWorkspace(ws.id) }}
+              >
+                <Trash2 size={12} />{L('删除注册', 'Remove registration')}
+              </button>
+            </div>
+          )}
         </div>
         {picking && (
           <div style={styles.pickerPanel} onMouseDown={(e) => e.stopPropagation()}>
@@ -827,6 +877,7 @@ const styles: Record<string, CSSProperties> = {
   sectionChevron: { display: 'inline-flex', color: '#a2aabe' },
   empty: { padding: '14px 8px', fontSize: 12, color: '#a2aabe' },
   wsRow: {
+    position: 'relative',
     display: 'flex', alignItems: 'center', gap: 4, padding: '7px 4px', borderRadius: 7,
     cursor: 'pointer', userSelect: 'none',
   },
@@ -840,23 +891,41 @@ const styles: Record<string, CSSProperties> = {
   },
   wsCount: { fontSize: 12, fontWeight: 500, color: '#8a93a6', flexShrink: 0 },
   wsActions: { display: 'none', gap: 2, alignItems: 'center', flexShrink: 0 },
+  kebab: {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: 20, height: 20, borderRadius: 6, border: 'none', cursor: 'pointer',
+    background: 'transparent', color: 'var(--fg-muted, #5a6478)',
+  },
+  rowMenu: {
+    position: 'absolute', right: 6, top: '100%', zIndex: 30, minWidth: 168,
+    display: 'flex', flexDirection: 'column', gap: 1, padding: 4, borderRadius: 9,
+    background: 'var(--bg, #ffffff)', border: '1px solid var(--border, rgba(28, 35, 51, 0.12))',
+    boxShadow: '0 6px 20px rgba(15, 23, 42, 0.16)',
+  },
+  menuItem: {
+    display: 'flex', alignItems: 'center', gap: 7, padding: '5px 8px', borderRadius: 6,
+    fontSize: 12, border: 'none', textAlign: 'left', cursor: 'pointer',
+    background: 'transparent', color: 'var(--fg, #3c4659)',
+  },
+  menuItemDanger: { color: '#dc2626' },
   sessionActions: { display: 'none', gap: 2, alignItems: 'center', flexShrink: 0 },
   sessionList: { marginLeft: 10, borderLeft: '1px solid rgba(28, 35, 51, 0.07)' },
   sessionRow: {
+    position: 'relative',
     display: 'flex', alignItems: 'center', gap: 6, padding: '3px 4px', borderRadius: 6,
-    cursor: 'pointer', fontSize: 12, color: '#3c4659', userSelect: 'none',
+    cursor: 'pointer', fontSize: 12, color: 'var(--fg, #3c4659)', userSelect: 'none',
   },
   statusSlot: { width: 10, height: 10, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
   stateDot: { width: 6, height: 6, borderRadius: 3, flexShrink: 0 },
   sessionTitle: { flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   miniButton: {
     fontSize: 11, lineHeight: '16px', padding: '0 6px', borderRadius: 6,
-    border: '1px solid rgba(28, 35, 51, 0.12)', background: '#ffffff', color: '#5a6478', cursor: 'pointer',
+    border: '1px solid var(--border, rgba(28, 35, 51, 0.12))', background: 'var(--bg, #ffffff)', color: 'var(--fg-muted, #5a6478)', cursor: 'pointer',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4,
   },
   restoreButton: {
     fontSize: 11, lineHeight: '16px', padding: '0 8px', borderRadius: 6,
-    border: '1px solid rgba(45, 102, 247, 0.4)', background: 'rgba(45, 102, 247, 0.08)',
+    border: '1px solid rgba(45, 102, 247, 0.4)', background: 'rgba(45, 102, 247, 0.14)',
     color: '#2d66f7', cursor: 'pointer',
   },
   rowDragging: { opacity: 0.45 },
@@ -872,7 +941,7 @@ const styles: Record<string, CSSProperties> = {
   },
   pickerPanel: {
     margin: '2px 4px 6px 26px', padding: 8, borderRadius: 10,
-    background: '#f5f7fa', border: '1px solid rgba(28, 35, 51, 0.08)',
+    background: 'var(--bg, #f5f7fa)', border: '1px solid var(--border, rgba(28, 35, 51, 0.08))',
   },
   pickerLabel: { fontSize: 11, fontWeight: 600, color: '#8a93a6', margin: '4px 0' },
   pickerGrid: { display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 2 },
@@ -888,6 +957,6 @@ const styles: Record<string, CSSProperties> = {
   pickerSelected: { outline: '2px solid #2d66f7', outlineOffset: 1 },
   pickerClear: {
     marginTop: 6, fontSize: 11, padding: '2px 10px', borderRadius: 7,
-    border: '1px solid rgba(28, 35, 51, 0.14)', background: '#ffffff', color: '#5a6478', cursor: 'pointer',
+    border: '1px solid var(--border, rgba(28, 35, 51, 0.14))', background: 'var(--bg, #ffffff)', color: 'var(--fg-muted, #5a6478)', cursor: 'pointer',
   },
 }
