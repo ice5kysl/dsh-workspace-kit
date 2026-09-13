@@ -32,6 +32,9 @@ import { WorkspaceSidebar } from './WorkspaceSidebar.tsx'
 export const name = 'workspace-kit'
 export const inject = ['slots', 'sessions', 'workspaces', 'uiWorkspace'] as const
 
+// Re-exported so the built client bundle can be unit-driven by tests.
+export { sessionStatusOf } from './WorkspaceSidebar.tsx'
+
 const PERSIST_KEY = 'dsh.workspace-kit.archive.v1'
 
 /** Minimal service faces this plugin consumes (typed locally at the boundary). */

@@ -45,6 +45,10 @@ export interface WorkspaceSidebarProps {
   expandSidebar: () => void
   useSessions: <T>(selector: (state: any) => T) => T
   useWorkspaces: <T>(selector: (state: any) => T) => T
+  /** Optional standard share: pending user interactions per session
+   *  (ReadonlyMap<SessionId, {kind}>). Absent on older shells — the sidebar
+   *  then degrades to running/done only. */
+  useSessionPendingInteraction?: <T>(selector: (state: any) => T) => T
   useStore: <T>(selector: (state: ArchiveState) => T) => T
   actions: {
     archive(workspaceId: string, at: string): void
@@ -96,10 +100,24 @@ interface WsRowData {
   readonly id: WorkspaceId
   readonly title: string
   readonly path: string
+  readonly createdAt?: string
   readonly sessionCount: number
   readonly archived: boolean
   /** Sessions in durable account order (registry order, filtered). */
   readonly sessions: readonly SessionRowData[]
+}
+
+/** `~/…` for the user's home prefix (macOS `/Users/x`, Linux `/home/x`). */
+function abbrevHome(path: string): string {
+  return path.replace(/^\/(Users|home)\/[^/]+/, '~')
+}
+
+/** Tooltip date: `2026/9/9 12:12` in the viewer's locale, ISO passthrough on garbage. */
+function formatCreated(iso: string | undefined): string {
+  if (!iso) return ''
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  return date.toLocaleString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
 type DragState =
@@ -156,9 +174,20 @@ ensureStatusStyles()
 /**
  * Map one session summary onto its row indicator with the shipped
  * precedence: waiting on the user > running > finished-but-unopened.
+ *
+ * `pendingKind` comes from the SEPARATE pending-interaction snapshot
+ * (`useSessionPendingInteraction`, a ReadonlyMap<SessionId, {kind}>) — it is
+ * NOT a field on the session list record (the earlier version read
+ * `s.pendingInteraction`, which never exists, so waiting sessions always fell
+ * through to the running spinner). Kinds are domain-owned and verified
+ * against the OFFICIAL workspace browser (dsh-client-ui-workspace
+ * `visiblePendingKind`): 'approval' (dsh-user-approval), 'plan-review'
+ * (dsh-plan-mode), 'question' (dsh-user-questions). An earlier draft used
+ * 'ask' for the last one — no such kind exists, so question-waiting
+ * sessions kept the running spinner.
  */
-function sessionStatusOf(s: any): SessionStatus | undefined {
-  switch (s?.pendingInteraction) {
+export function sessionStatusOf(s: any, pendingKind?: string): SessionStatus | undefined {
+  switch (pendingKind) {
     case 'approval': return { kind: 'warning', label: L('等待审批', 'Waiting for approval') }
     case 'plan-review': return { kind: 'warning', label: L('计划待审', 'Plan awaiting review') }
     case 'question': return { kind: 'warning', label: L('等待回答', 'Waiting for answer') }
@@ -212,6 +241,7 @@ function collectRows(
   workspacesState: any,
   sessionsState: any,
   archived: Readonly<Record<string, { at: string }>>,
+  pendingInteractions?: { get?(id: string): { kind?: string } | undefined },
 ): { active: WsRowData[]; archivedWs: WsRowData[]; ungrouped: SessionRowData[] } {
   const byId: Record<string, any> = sessionsState?.byId ?? {}
   const sessionIds: readonly string[] = Array.isArray(sessionsState?.ids) ? sessionsState.ids : []
@@ -225,7 +255,7 @@ function collectRows(
       id: id as SessionId,
       title: s.displayTitle ?? s.title ?? id,
       updatedAt: s.updatedAt ?? 0,
-      status: sessionStatusOf(s),
+      status: sessionStatusOf(s, pendingInteractions?.get?.(id)?.kind),
     }
   }
 
@@ -250,6 +280,7 @@ function collectRows(
       id: item.workspaceId as WorkspaceId,
       title: item.title,
       path: item.path,
+      createdAt: typeof item.createdAt === 'string' ? item.createdAt : undefined,
       sessionCount: sessions.length,
       archived: Boolean(archived[wsId]),
       sessions,
@@ -337,7 +368,7 @@ function buildSearchHits(
 
 export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
   const {
-    wide, expandSidebar, useSessions, useWorkspaces, useStore, actions,
+    wide, expandSidebar, useSessions, useWorkspaces, useSessionPendingInteraction, useStore, actions,
     openSession, startSession, renameSession, forkSession,
     addWorkspace, renameWorkspace, deleteWorkspace, archiveSession,
     reorderWorkspace, reorderSession, searchContent,
@@ -346,6 +377,9 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
   const appearanceMap = useStore((state) => state.appearance ?? {})
   const sessionsState = typeof useSessions === 'function' ? useSessions((state) => state) : undefined
   const workspacesState = typeof useWorkspaces === 'function' ? useWorkspaces((state) => state) : undefined
+  const pendingInteractions = typeof useSessionPendingInteraction === 'function'
+    ? useSessionPendingInteraction((snapshot) => snapshot)
+    : undefined
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [archivedOpen, setArchivedOpen] = useState(false)
@@ -355,6 +389,9 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
   // kebab hover, closing on row leave or after an action — pointer-safe
   // because the absolutely-positioned menu stays inside the row subtree.
   const [menu, setMenu] = useState<string | null>(null)
+  // Workspace hover tooltip (fixed-position, escapes the sidebar's overflow
+  // clipping): which row + where its right edge is.
+  const [wsTooltip, setWsTooltip] = useState<{ key: string; top: number; left: number } | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQ, setSearchQ] = useState('')
   // Session ordering: 'updated' (recency) or 'manual' (durable account order).
@@ -366,8 +403,8 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
   const [pickerWs, setPickerWs] = useState<string | null>(null)
 
   const { active, archivedWs, ungrouped } = useMemo(
-    () => collectRows(workspacesState, sessionsState, archived),
-    [workspacesState, sessionsState, archived],
+    () => collectRows(workspacesState, sessionsState, archived, pendingInteractions),
+    [workspacesState, sessionsState, archived, pendingInteractions],
   )
 
   // Default session view = recency; after the first manual move a workspace
@@ -573,10 +610,15 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
             ...(over === wsKey ? styles.rowDropOver : {}),
           }}
           draggable={draggable}
-          onMouseEnter={() => setHovered(wsKey)}
+          onMouseEnter={(e) => {
+            setHovered(wsKey)
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+            setWsTooltip({ key: wsKey, top: rect.top + rect.height / 2, left: rect.right + 8 })
+          }}
           onMouseLeave={() => {
             setHovered((v) => (v === wsKey ? null : v))
             setMenu((v) => (v === wsKey ? null : v))
+            setWsTooltip((v) => (v?.key === wsKey ? null : v))
           }}
           onMouseDown={(e) => {
             e.stopPropagation()
@@ -835,6 +877,18 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
           </>
         )}
       </div>
+      {wsTooltip && (() => {
+        const wsId = wsTooltip.key.replace(/^w:/, '')
+        const ws = [...active, ...archivedWs].find((row) => String(row.id) === wsId)
+        if (!ws) return null
+        return (
+          <div style={{ ...styles.wsTooltip, top: wsTooltip.top, left: wsTooltip.left }}>
+            <div style={styles.wsTooltipTitle}>{ws.title}</div>
+            <div style={styles.wsTooltipDim}>{abbrevHome(ws.path)}</div>
+            {ws.createdAt ? <div style={styles.wsTooltipDim}>{L('创建于 {at}', 'Created {at}', { at: formatCreated(ws.createdAt) })}</div> : null}
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -883,6 +937,26 @@ const styles: Record<string, CSSProperties> = {
     display: 'flex', alignItems: 'center', gap: 4, padding: '7px 4px', borderRadius: 7,
     cursor: 'pointer', userSelect: 'none',
   },
+  wsTooltip: {
+    position: 'fixed',
+    transform: 'translateY(-50%)',
+    zIndex: 60,
+    minWidth: 180,
+    maxWidth: 300,
+    padding: '10px 12px',
+    borderRadius: 8,
+    background: 'rgba(28, 32, 38, 0.96)',
+    color: '#f3f4f6',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.28)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+    pointerEvents: 'none',
+    fontSize: 12,
+    lineHeight: 1.5,
+  },
+  wsTooltipTitle: { fontSize: 13, fontWeight: 600 },
+  wsTooltipDim: { color: 'rgba(243,244,246,0.72)', wordBreak: 'break-all' },
   wsChevron: {
     width: 14, flexShrink: 0, display: 'inline-flex', alignItems: 'center',
     justifyContent: 'center', color: 'var(--dsw-alias-label-tertiary, #9aa3b5)',

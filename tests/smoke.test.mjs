@@ -153,6 +153,53 @@ await check('empty registry: tool and command both answer the empty state', asyn
   assert.ok(result.text.includes('No workspaces yet'))
 })
 
+await check('session status: pending interaction outranks running; running outranks done', async () => {
+  // Load the client bundle through the official ModuleLoader envelope.
+  let registration
+  globalThis.window = {
+    __ModuleLoader__: { load: (entry) => { registration = entry } },
+  }
+  const reactStub = {
+    createElement: () => null,
+    Fragment: {},
+    createContext: () => ({ Provider: () => null, Consumer: () => null, displayName: '' }),
+    useState: () => [undefined, () => {}],
+    useEffect: () => {},
+    useLayoutEffect: () => {},
+    useMemo: (fn) => fn(),
+    useCallback: (fn) => fn,
+    useRef: (value) => ({ current: value }),
+    useSyncExternalStore: () => undefined,
+    forwardRef: (component) => component,
+    memo: (component) => component,
+  }
+  const jsxStub = { jsx: () => null, jsxs: () => null, Fragment: {} }
+  const storeStub = { defineStore: () => ({ getState: () => ({}), subscribe: () => () => {}, setState: () => {} }) }
+  await import('../lib/client.js')
+  const client = registration.factory((id) => {
+    if (id === 'react') return reactStub
+    if (id === 'react/jsx-runtime') return jsxStub
+    if (id === '@deepseek-ai/dsh-client-store') return storeStub
+    throw new Error(`unexpected external: ${id}`)
+  })
+  const { sessionStatusOf } = client
+
+  // The fixed bug: a session WAITING on the user must not show the running
+  // spinner. The pending kind comes from the separate interaction snapshot,
+  // never from a field on the session record.
+  const waiting = sessionStatusOf({ running: true }, 'approval')
+  assert.equal(waiting.kind, 'warning', 'approval outranks running')
+  assert.equal(sessionStatusOf({ running: true }, 'plan-review').kind, 'warning')
+  assert.equal(sessionStatusOf({ running: true }, 'question').kind, 'warning', 'user-questions kind is "question" (verified against dsh-client-ui-workspace visiblePendingKind)')
+
+  // The shipped precedence otherwise: running > done > nothing.
+  assert.equal(sessionStatusOf({ running: true }, undefined).kind, 'ongoing')
+  assert.equal(sessionStatusOf({ completed: true }, undefined).kind, 'done')
+  assert.equal(sessionStatusOf({}, undefined), undefined)
+  // An unknown interaction kind never hides real activity.
+  assert.equal(sessionStatusOf({ running: true }, 'something-else').kind, 'ongoing')
+})
+
 if (failed > 0) {
   console.log(`\n${failed} check(s) failed`)
   process.exitCode = 1
