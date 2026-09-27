@@ -29,4 +29,4 @@
 - **上游化**：为 workspace 域增加 `archiveWorkspace` / `unarchiveWorkspace`（host storageDomain 持久化 + follow 增量 + UI 行级入口），届时插件改为薄壳。
 - **跨端同步归档集**（host 侧 domain 存储 + 自定义远程动词——需要上游 typert/generator 支持 out-of-tree 远程协议）。
 - **Spotlight 增强**：面板内会话内容搜索、最近项目、`>` 命令模式、拖拽排序、主题跟随。
-- **上游契约回归**：`@deepseek-ai/dsh` 升级到新 rc 后，重新校验浏览器契约（`shell.overlay`、`IWorkspaces.startSession`、`ISessions.open`、`defineStore` persist）并同步更新插件。
+- **上游契约回归**：`@deepseek-ai/dsh` 升级到新 rc 后，重新校验浏览器契约（`shell.overlay`、`uiWorkspace.startSession` / `uiWorkspace.openSession`、`IWorkspaces`、`useSessionStatus`、`defineStore` persist）并同步更新插件。0.1.6 的断裂（会话导航从 `ISessions.open` 移到 `uiWorkspace.openSession`）已用特性探测兼容——见 `src/client/index.ts` 的 `openSessionAt`。

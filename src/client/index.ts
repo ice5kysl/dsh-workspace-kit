@@ -33,7 +33,7 @@ export const name = 'workspace-kit'
 export const inject = ['slots', 'sessions', 'workspaces', 'uiWorkspace'] as const
 
 // Re-exported so the built client bundle can be unit-driven by tests.
-export { sessionStatusOf } from './WorkspaceSidebar.tsx'
+export { sessionStatusOf, sessionStatusOfUnified } from './WorkspaceSidebar.tsx'
 
 const PERSIST_KEY = 'dsh.workspace-kit.archive.v1'
 
@@ -56,10 +56,35 @@ interface ClientCtxLike {
 
 /** Cross-controller navigation/directory capability (dsh-client-ui-workspace). */
 interface UiWorkspaceLike {
+  /**
+   * Select a Session and show its Conversation as one navigation action
+   * (dsh >= 0.1.6). Absent on older shells, where the Sessions Controller
+   * still owned `open()` — see `openSessionAt` below.
+   */
+  openSession?(target: SessionId): void
   /** Start the official New Session flow and navigate to its Session. */
   startSession(workspaceId?: WorkspaceId): void
   /** Open the host-native directory picker; null when cancelled. */
   pickDirectory(): Promise<string | null>
+}
+
+/**
+ * Select a Session across shells.
+ *
+ * dsh 0.1.6 moved navigation out of the Sessions Controller: `ISessions.open()`
+ * was removed and the view owner (`uiWorkspace.openSession`) became the only
+ * entry point. dsh <= 0.1.5 has no `uiWorkspace.openSession`, but its
+ * `ctx.sessions.open()` still works. Feature-detect so one build serves both —
+ * calling the removed method on 0.1.6+ throws and makes every session row and
+ * Spotlight hit look dead (GitHub issue #1).
+ */
+function openSessionAt(ctx: { sessions: ISessions; uiWorkspace: UiWorkspaceLike }, sessionId: SessionId): void {
+  if (typeof ctx.uiWorkspace?.openSession === 'function') {
+    ctx.uiWorkspace.openSession(sessionId)
+    return
+  }
+  const legacy = ctx.sessions as unknown as { open?(id: SessionId): void }
+  if (typeof legacy.open === 'function') legacy.open(sessionId)
 }
 
 /** Persisted sidebar choice (official vs plugin), read once at boot. */
@@ -84,7 +109,7 @@ export function apply(raw: Context): void {
 
   // Shared navigation actions (same pattern as the shipped browser's inject).
   const openSession = (sessionId: SessionId): void => {
-    ctx.sessions.open(sessionId)
+    openSessionAt(ctx, sessionId)
   }
   const startSession = (workspaceId?: WorkspaceId): void => {
     ctx.uiWorkspace.startSession(workspaceId)
@@ -102,7 +127,7 @@ export function apply(raw: Context): void {
   }
   const forkSession = (sessionId: SessionId): void => {
     ctx.sessions.fork({ sessionId, increaseTitle: true })
-      .then((childId) => ctx.sessions.open(childId))
+      .then((childId) => openSession(childId))
       .catch((error: unknown) => log.info('fork failed', String(error)))
   }
   // Archive a session into the host's durable (irreversible) archive set.

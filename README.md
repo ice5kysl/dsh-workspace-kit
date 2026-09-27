@@ -23,6 +23,7 @@ The plugin ships **two faces** carried by a single Loader entry (`dsh-workspace-
 Beyond archive/restore, the enhanced sidebar (when active) adds:
 
 - **New workspace** (the plus button next to search) — system directory picker → register → open.
+- **Row-level quick actions** — hovering a workspace shows the frequent verbs inline instead of hiding them in the "···" menu: **new session** on live rows, **restore** on archived rows; the menu keeps the occasional actions (icon/color, rename, archive, remove registration).
 - **Sidebar search** (expandable input) — filter workspaces/sessions by title and path, plus **full-text session-content search** (≥2 chars, debounced, via the official host content index).
 - **Per-workspace icon + accent color** — hover a row and click the palette button (or the icon itself); 32 SVG icons + 9 colors, "clear" to reset; Spotlight results show the same look (browser-persisted).
 - **Drag reorder** — drag workspace rows → official `insertBefore`; drag sessions within their workspace → `insertSessionBefore`; once a workspace is manually dragged its sessions switch to the manual (account) order, matching the shipped Manual semantics.
@@ -116,7 +117,7 @@ cordis.patch.yml    bundle layer: inserts the single Loader entry `dsh-workspace
 
 - Plugin shape = a **bundle package** (`dsh.bundle.patch`) + a **browser face** (`dsh.client.platform: 'web'` + the `./client` export). The host scans enabled Loader entries; one package provides both the node and the browser side from the same entry, and **one package may only have one entry** (multiple entries resolving to the same package name are rejected by the client module system).
 - Spotlight mounts into **`shell.overlay` (list/root)** — the official slot reserved for whole-window custom overlays. The sidebar registers into **`sidebar.workspaces` (single/root)** at **priority -1** to shadow the built-in occupant (lower priority renders; only equal priorities conflict) — the officially allowed "full replacement" route, at the cost of re-implementing some built-in browser capabilities yourself (see known-limitations).
-- Data is read through the framework's standard hooks (`useWorkspaces` / `useSessions` / `useStore`); actions go through registered `inject` closures that call the official session service: `ctx.workspaces.startSession(workspaceId)` (reuse/create and open that workspace's session) and `ctx.sessions.open(id)`.
+- Data is read through the framework's standard hooks (`useWorkspaces` / `useSessions` / `useStore`, plus `useSessionStatus` on dsh ≥ 0.1.6); actions go through registered `inject` closures that call the official UI services: `ctx.uiWorkspace.startSession(workspaceId)` (reuse/create and open that workspace's session), `ctx.uiWorkspace.openSession(id)` (select a session) and the workspace-controller calls for archive/rename/reorder.
 - The archive set uses the framework's `defineStore` + `persist` (bare JSON in localStorage under `dsh.workspace-kit.archive.v1`), the same mechanism as built-in view preferences (e.g. `dsh.workspace.view.v5`).
 - There is no official registration API for global hotkeys (no keyboard service anywhere in the repo), so, following the convention of built-in plugins, a `window` keydown listener is attached (⌘K/Ctrl+K); the palette stays mounted and renders `null` while closed to keep the listener alive.
 - The host side is deliberately **read-only**: archive semantics are view-layer (browser) state; keeping a second copy host-side would drift from the GUI, so it is intentionally not written.
@@ -124,6 +125,7 @@ cordis.patch.yml    bundle layer: inserts the single Loader entry `dsh-workspace
 ## Compatibility
 
 - Target dsh: `@deepseek-ai/dsh` v0.1.1-rc.2 (`dsh web`, profile `web`). The browser face targets that release's `shell.overlay` / `IWorkspaces` / `ISessions` contracts; re-validate against the upstream contract on version upgrades.
+- Tested against both sides of the 0.1.6 navigation change: dsh ≤ 0.1.5 (session navigation via `ctx.sessions.open`) and dsh ≥ 0.1.6 (navigation moved to `ctx.uiWorkspace.openSession`, and `useSessionPendingInteraction` → `useSessionStatus`). The browser face feature-detects both, so one build serves either. See `npm test` (`tests/smoke.test.mjs`).
 - Known limitations and the backlog are tracked in [docs/known-limitations.md](./docs/known-limitations.md) (中文版见 [docs/known-limitations.zh-CN.md](./docs/known-limitations.zh-CN.md)).
 
 ## License

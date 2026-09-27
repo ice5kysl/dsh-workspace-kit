@@ -11,6 +11,9 @@
  *   workspace to reorder (persisted via `insertSessionBefore`) — after the
  *   first manual move that workspace keeps its manual order.
  * - 「已归档 (N)」 collapsed section: archived workspaces with 恢复/打开/新建会话.
+ *   Frequent verbs sit on the row itself (hover cluster): 新建会话 for live
+ *   workspaces, 恢复此工作区 for archived ones — the "···" menu keeps only the
+ *   occasional actions (图标/颜色, 重命名, 归档, 删除注册).
  * - 未归组 sessions in their own collapsible section.
  * - Rail state (`wide=false`) renders a compact icon column.
  *  - Session rows carry a live status indicator mirroring the shipped
@@ -45,9 +48,15 @@ export interface WorkspaceSidebarProps {
   expandSidebar: () => void
   useSessions: <T>(selector: (state: any) => T) => T
   useWorkspaces: <T>(selector: (state: any) => T) => T
-  /** Optional standard share: pending user interactions per session
-   *  (ReadonlyMap<SessionId, {kind}>). Absent on older shells — the sidebar
-   *  then degrades to running/done only. */
+  /**
+   * Standard share (dsh >= 0.1.6): the unified per-session UI status
+   * (ReadonlyMap<SessionId, {running, pendingInteraction, completionUnread}>).
+   * Preferred over `useSessionPendingInteraction` when present.
+   */
+  useSessionStatus?: <T>(selector: (state: any) => T) => T
+  /** Legacy standard share (dsh <= 0.1.5): pending user interactions per
+   *  session (ReadonlyMap<SessionId, {kind}>). Absent on newer shells — the
+   *  sidebar then reads `useSessionStatus`. */
   useSessionPendingInteraction?: <T>(selector: (state: any) => T) => T
   useStore: <T>(selector: (state: ArchiveState) => T) => T
   actions: {
@@ -159,6 +168,8 @@ const STATUS_CSS = [
   '@media (prefers-reduced-motion:reduce){.dsh-wskit-cell{animation:none}.dsh-wskit-matrix{display:none}.dsh-wskit-ongoing:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}}',
   '.dsh-wskit-menu-item{transition:background .12s ease}',
   '.dsh-wskit-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover, rgba(28,35,51,0.07))}',
+  '.dsh-wskit-icon-btn{transition:background .12s ease,color .12s ease}',
+  '.dsh-wskit-icon-btn:hover{background:var(--dsw-alias-interactive-bg-hover, rgba(28,35,51,0.08))}',
 ].join('\n')
 
 /** Inject the tiny chase keyframes once (browser face only; id-guarded). */
@@ -195,6 +206,21 @@ export function sessionStatusOf(s: any, pendingKind?: string): SessionStatus | u
   if (s?.running) return { kind: 'ongoing', label: L('进行中', 'Running') }
   if (s?.completed) return { kind: 'done', label: L('已完成', 'Completed') }
   return undefined
+}
+
+/**
+ * Same indicator from dsh >= 0.1.6's unified status record
+ * (`{running, pendingInteraction, completionUnread}`), the shape the shipped
+ * browser now feeds through `useSessionStatus`. The legacy
+ * `useSessionPendingInteraction` share and the `SessionSummary.completed`
+ * field both disappeared in 0.1.6, so this is the current path; the
+ * `?? s.running` fallback mirrors the shipped `sessionNode()`.
+ */
+export function sessionStatusOfUnified(status: any, s?: any): SessionStatus | undefined {
+  return sessionStatusOf(
+    { running: status?.running ?? s?.running, completed: status?.completionUnread === true },
+    status?.pendingInteraction?.kind,
+  )
 }
 
 /**
@@ -236,12 +262,14 @@ function byUpdatedDesc(a: SessionRowData, b: SessionRowData): number {
 }
 
 /** Workspaces + children session rows. Workspace rows keep registry order;
- *  per-workspace session lists keep the durable account order. */
+ *  per-workspace session lists keep the durable account order.
+ *  `resolveStatus` folds both status shares (legacy pending map / unified
+ *  status map) into one row indicator; absent means "no indicator". */
 function collectRows(
   workspacesState: any,
   sessionsState: any,
   archived: Readonly<Record<string, { at: string }>>,
-  pendingInteractions?: { get?(id: string): { kind?: string } | undefined },
+  resolveStatus?: (id: string, summary: any) => SessionStatus | undefined,
 ): { active: WsRowData[]; archivedWs: WsRowData[]; ungrouped: SessionRowData[] } {
   const byId: Record<string, any> = sessionsState?.byId ?? {}
   const sessionIds: readonly string[] = Array.isArray(sessionsState?.ids) ? sessionsState.ids : []
@@ -255,7 +283,7 @@ function collectRows(
       id: id as SessionId,
       title: s.displayTitle ?? s.title ?? id,
       updatedAt: s.updatedAt ?? 0,
-      status: sessionStatusOf(s, pendingInteractions?.get?.(id)?.kind),
+      status: resolveStatus?.(id, s),
     }
   }
 
@@ -368,7 +396,7 @@ function buildSearchHits(
 
 export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
   const {
-    wide, expandSidebar, useSessions, useWorkspaces, useSessionPendingInteraction, useStore, actions,
+    wide, expandSidebar, useSessions, useWorkspaces, useSessionStatus, useSessionPendingInteraction, useStore, actions,
     openSession, startSession, renameSession, forkSession,
     addWorkspace, renameWorkspace, deleteWorkspace, archiveSession,
     reorderWorkspace, reorderSession, searchContent,
@@ -377,9 +405,19 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
   const appearanceMap = useStore((state) => state.appearance ?? {})
   const sessionsState = typeof useSessions === 'function' ? useSessions((state) => state) : undefined
   const workspacesState = typeof useWorkspaces === 'function' ? useWorkspaces((state) => state) : undefined
+  // dsh >= 0.1.6 ships one unified status map; dsh <= 0.1.5 ships only the
+  // pending-interaction map. Prefer the former, degrade to the latter.
+  const unifiedStatus = typeof useSessionStatus === 'function'
+    ? useSessionStatus((snapshot) => snapshot)
+    : undefined
   const pendingInteractions = typeof useSessionPendingInteraction === 'function'
     ? useSessionPendingInteraction((snapshot) => snapshot)
     : undefined
+  const resolveStatus = useMemo(() => {
+    if (unifiedStatus) return (id: string, s: any): SessionStatus | undefined => sessionStatusOfUnified(unifiedStatus.get?.(id), s)
+    if (pendingInteractions) return (id: string, s: any): SessionStatus | undefined => sessionStatusOf(s, pendingInteractions.get?.(id)?.kind)
+    return undefined
+  }, [unifiedStatus, pendingInteractions])
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [archivedOpen, setArchivedOpen] = useState(false)
@@ -403,8 +441,8 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
   const [pickerWs, setPickerWs] = useState<string | null>(null)
 
   const { active, archivedWs, ungrouped } = useMemo(
-    () => collectRows(workspacesState, sessionsState, archived, pendingInteractions),
-    [workspacesState, sessionsState, archived, pendingInteractions],
+    () => collectRows(workspacesState, sessionsState, archived, resolveStatus),
+    [workspacesState, sessionsState, archived, resolveStatus],
   )
 
   // Default session view = recency; after the first manual move a workspace
@@ -562,7 +600,7 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
           <StatusGlyph status={s.status} />
           <span style={styles.sessionTitle}>{s.title}</span>
           <span
-            style={{ ...styles.sessionActions, display: hovered === dragKey || menu === dragKey ? 'flex' : 'none' }}
+            style={{ ...styles.sessionActions, visibility: hovered === dragKey || menu === dragKey ? 'visible' : 'hidden' }}
             onMouseDown={(e) => e.stopPropagation()}
           >
             <button
@@ -643,6 +681,10 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
             setOver(null)
           }}
         >
+          <span style={styles.wsChevron}>{isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
+          {/* Per-workspace icon sits AFTER the chevron so every row's chevron
+              starts at the same x — an icon before it used to push the chevron
+              right and break the column. */}
           {(app.icon || app.color) && (
             <span
               style={styles.wsIconSlot}
@@ -655,10 +697,50 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
               <WorkspaceGlyph icon={app.icon} color={app.color} size={15} />
             </span>
           )}
-          <span style={styles.wsChevron}>{isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
-          <span style={styles.wsTitle}>{ws.title}</span>
-          <span style={styles.wsCount}>{ws.sessionCount}</span>
-          <span style={{ ...styles.wsActions, display: hovered === wsKey || menu === wsKey ? 'flex' : 'none' }} onMouseDown={(e) => e.stopPropagation()}>
+          <span style={styles.wsTitleInline}>{ws.title}</span>
+          {/* Session count rides inline right after the name ("名称 · 3") in a
+              dimmer tone, and `marginRight: auto` pushes the action cluster to
+              the far right — so the count never travels when the hover actions
+              appear. */}
+          <span style={styles.wsCountInline}>· {ws.sessionCount}</span>
+          {/* The cluster keeps its box at all times (`visibility`, not
+              `display`) so revealing it on hover cannot reflow the row. */}
+          <span
+            style={{ ...styles.wsActions, visibility: hovered === wsKey || menu === wsKey ? 'visible' : 'hidden' }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {/* Frequent verbs stay on the row (hover) instead of hiding a click
+                deeper inside the "···" menu: new session for live workspaces,
+                restore for archived ones. */}
+            {ws.archived ? (
+              <button
+                style={styles.iconActionRestore}
+                className="dsh-wskit-icon-btn"
+                title={L('恢复此工作区', 'Restore workspace')}
+                aria-label={L('恢复此工作区', 'Restore workspace')}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMenu(null)
+                  actions.restore(String(ws.id))
+                }}
+              >
+                <ArchiveRestore size={13} />
+              </button>
+            ) : (
+              <button
+                style={styles.iconActionPrimary}
+                className="dsh-wskit-icon-btn"
+                title={L('新建会话', 'New session')}
+                aria-label={L('新建会话', 'New session')}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMenu(null)
+                  startSession(ws.id)
+                }}
+              >
+                <Plus size={13} />
+              </button>
+            )}
             <button
               style={styles.kebab}
               title={L('更多操作', 'More actions')}
@@ -670,11 +752,6 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
           </span>
           {menu === wsKey && (
             <div style={styles.rowMenu} onMouseDown={(e) => e.stopPropagation()}>
-              {!ws.archived && (
-                <button style={styles.menuItem} className="dsh-wskit-menu-item" onClick={(e) => { e.stopPropagation(); setMenu(null); startSession(ws.id) }}>
-                  <Plus size={12} />{L('新建会话', 'New session')}
-                </button>
-              )}
               <button style={styles.menuItem} className="dsh-wskit-menu-item" onClick={(e) => { e.stopPropagation(); setMenu(null); setPickerWs(picking ? null : String(ws.id)) }}>
                 <Palette size={12} />{L('图标 / 颜色', 'Icon / color')}
               </button>
@@ -683,17 +760,18 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps): JSX.Element {
                   <Pencil size={12} />{L('重命名', 'Rename')}
                 </button>
               )}
-              <button
-                style={styles.menuItem}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setMenu(null)
-                  if (ws.archived) actions.restore(String(ws.id))
-                  else actions.archive(String(ws.id), new Date().toISOString())
-                }}
-              >
-                {ws.archived ? <><ArchiveRestore size={12} />{L('恢复此工作区', 'Restore workspace')}</> : <><Archive size={12} />{L('归档（软归档，可恢复）', 'Archive (soft, restorable)')}</>}
-              </button>
+              {!ws.archived && (
+                <button
+                  style={styles.menuItem} className="dsh-wskit-menu-item"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setMenu(null)
+                    actions.archive(String(ws.id), new Date().toISOString())
+                  }}
+                >
+                  <Archive size={12} />{L('归档（软归档，可恢复）', 'Archive (soft, restorable)')}
+                </button>
+              )}
               <button
                 style={{ ...styles.menuItem, ...styles.menuItemDanger }} className="dsh-wskit-menu-item"
                 title={L('目录与历史会话保留', 'Directory and past sessions kept')}
@@ -965,12 +1043,36 @@ const styles: Record<string, CSSProperties> = {
     flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, color: 'var(--dsw-alias-label-primary, #2e3a4d)', lineHeight: '20px',
     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
   },
+  /** Workspace-row title variant: sizes to its text (so the inline count can
+   *  hug the name) while still ellipsizing when the row runs out of width. */
+  wsTitleInline: {
+    flex: '0 1 auto', minWidth: 0, fontSize: 14, fontWeight: 600, color: 'var(--dsw-alias-label-primary, #2e3a4d)', lineHeight: '20px',
+    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+  },
   wsCount: { fontSize: 12, fontWeight: 500, color: 'var(--dsw-alias-label-tertiary, #8a93a6)', flexShrink: 0 },
-  wsActions: { display: 'none', gap: 2, alignItems: 'center', flexShrink: 0 },
+  /** Inline `· N` right after the workspace name (dimmer than the title). */
+  wsCountInline: {
+    flexShrink: 0, marginRight: 'auto', paddingLeft: 4, fontSize: 12, fontWeight: 500,
+    color: 'var(--dsw-alias-label-tertiary, #8a93a6)', fontVariantNumeric: 'tabular-nums',
+  },
+  wsActions: { display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 },
   kebab: {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     width: 20, height: 20, borderRadius: 6, border: 'none', cursor: 'pointer',
     background: 'transparent', color: 'var(--dsw-alias-label-tertiary, var(--fg-muted, #5a6478))',
+  },
+  /** Inline row verbs (new session / restore): same hit box as the kebab so
+   *  the hover action cluster stays visually even. */
+  iconActionPrimary: {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: 20, height: 20, borderRadius: 6, border: 'none', cursor: 'pointer',
+    background: 'transparent', color: 'var(--dsw-alias-label-secondary, #5a6478)',
+  },
+  iconActionRestore: {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: 20, height: 20, borderRadius: 6, cursor: 'pointer',
+    border: '1px solid rgba(45, 102, 247, 0.35)', background: 'rgba(45, 102, 247, 0.12)',
+    color: '#2d66f7',
   },
   rowMenu: {
     position: 'absolute', right: 6, top: '100%', zIndex: 30, minWidth: 168,
@@ -984,7 +1086,7 @@ const styles: Record<string, CSSProperties> = {
     background: 'transparent', color: 'var(--dsw-alias-label-primary, var(--fg, #3c4659))',
   },
   menuItemDanger: { color: 'var(--dsw-alias-state-error-primary, #dc2626)' },
-  sessionActions: { display: 'none', gap: 2, alignItems: 'center', flexShrink: 0 },
+  sessionActions: { display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 },
   sessionList: { marginLeft: 10, borderLeft: '1px solid rgba(28, 35, 51, 0.07)' },
   sessionRow: {
     position: 'relative',

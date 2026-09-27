@@ -23,6 +23,7 @@
 除归档/恢复外，增强侧栏（启用时）还提供：
 
 - **新建工作区**（搜索按钮旁的加号按钮）——系统目录选择器 → 注册 → 打开。
+- **行内快捷操作**——hover 工作区行时，高频动作直接以图标摆在行上，不再藏进「···」菜单：未归档行是**新建会话**，已归档行是**恢复此工作区**；菜单只留低频动作（图标/颜色、重命名、归档、删除注册）。
 - **侧栏搜索**（展开输入框）——按工作区标题/路径与会话标题过滤，另有 **会话内容全文搜索**（≥2 字符防抖调官方 host 内容索引，结果按「会话内容命中」列出）。
 - **每工作区图标 + 强调色**——hover 工作区行点调色板按钮（或直接点图标）：32 个 SVG 图标 + 9 色可选，「清除」还原；Spotlight 结果同步显示（浏览器持久化）。
 - **拖拽排序**——工作区行拖动 → 官方 `insertBefore` 持久化；工作区内会话拖动 → `insertSessionBefore`；某工作区一旦手动拖过，其会话改按手动（账户）顺序展示（对齐内置 Manual 语义）。
@@ -115,7 +116,7 @@ cordis.patch.yml   bundle 层：插入唯一 Loader 入口 dsh-workspace-kit
 
 - 插件形态 = **组合包**（`dsh.bundle.patch`）+ **浏览器 face**（`dsh.client.platform: 'web'` + `./client` 导出）。host 扫描已启用的 Loader 条目，同一入口的包同时提供 node 与浏览器两侧，且**一个包只能有一个入口**（多入口解析到同一包名会被 client 模块系统拒绝）。
 - Spotlight 挂载到 **`shell.overlay`（list/root）**——官方为"整窗自定义浮层"预留的槽。侧栏浏览器注册进 **`sidebar.workspaces`（single/root）并用 priority -1 shadow** 内置占用者（priority 升序、最低者渲染，同 priority 才会报错）——这是官方允许的"整体替换"路线，代价是内置浏览器的部分高级能力需要自行补齐或舍弃（见 known-limitations）。
-- 数据读取只用框架标准 hook（`useWorkspaces`/`useSessions`/`useStore`），动作经注册的 `inject` 闭包调用官方会话服务：`ctx.workspaces.startSession(workspaceId)`（复用/新建并打开该工作区会话）与 `ctx.sessions.open(id)`。
+- 数据读取只用框架标准 hook（`useWorkspaces`/`useSessions`/`useStore`，dsh ≥ 0.1.6 另加 `useSessionStatus`），动作经注册的 `inject` 闭包调用官方 UI 服务：`ctx.uiWorkspace.startSession(workspaceId)`（复用/新建并打开该工作区会话）、`ctx.uiWorkspace.openSession(id)`（选中会话），以及工作区控制器的归档/重命名/排序调用。
 - 归档集用框架 `defineStore` + `persist`（localStorage 裸 JSON，key `dsh.workspace-kit.archive.v1`），与内置视图偏好（如 `dsh.workspace.view.v5`）同一机制。
 - 全局快捷键无官方注册 API（全仓无 keyboard 服务），按内置插件惯例自挂 `window` keydown（⌘K/Ctrl+K），面板常驻挂载、关闭时渲染 null 以保活监听。
 - 宿主侧只做**只读**定位工具/命令：归档语义是视图层（浏览器）状态，宿主侧另存一份会导致与 GUI 不一致，故刻意不写。
@@ -123,6 +124,7 @@ cordis.patch.yml   bundle 层：插入唯一 Loader 入口 dsh-workspace-kit
 ## 兼容性
 
 - 目标 dsh：`@deepseek-ai/dsh` v0.1.1-rc.2（`dsh web`，profile `web`）。浏览器 face 面向该版本的 `shell.overlay`/`IWorkspaces`/`ISessions` 契约；上游契约变更时需随版本校验。
+- 已覆盖 0.1.6 导航变更的两侧：dsh ≤ 0.1.5（会话导航走 `ctx.sessions.open`）与 dsh ≥ 0.1.6（导航移到 `ctx.uiWorkspace.openSession`，`useSessionPendingInteraction` → `useSessionStatus`）。浏览器 face 对两者都做特性探测，同一份构建两边可用；回归测试见 `npm test`（`tests/smoke.test.mjs`）。
 - 已知限制与后续方向见 [docs/known-limitations.zh-CN.md](./docs/known-limitations.zh-CN.md)（英文版 [docs/known-limitations.md](./docs/known-limitations.md)）。
 
 ## License
