@@ -21,13 +21,28 @@ import { registerWorkspaceTools } from './tools.ts'
 export const name = 'workspace-kit'
 export const inject = ['workspaceRegistry', 'tools', 'commands'] as const
 
-export function apply(ctx: Context): void {
+/**
+ * Optional entry config (under `config:` of the Loader row).
+ *
+ * `slashCommands: false` keeps `/workspace-find` and `/workspace-list` out of
+ * the chat's slash menu; the model tools stay registered, so agents can still
+ * locate workspaces. Read at activation, so it applies on the next start.
+ */
+export interface Config {
+  slashCommands?: boolean
+}
+
+export function apply(ctx: Context, config: Config = {}): void {
   const log = ctx.logger('workspace-kit')
   log.info('workspace-kit loaded')
 
   registerWorkspaceTools(ctx)
   log.info('workspace tools registered (workspace_find, workspace_list)')
 
+  if (config?.slashCommands === false) {
+    log.info('workspace commands skipped (slashCommands: false)')
+    return
+  }
   registerWorkspaceCommands(ctx, ctx.commands)
   log.info('workspace commands registered (/workspace-find, /workspace-list)')
 }

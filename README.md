@@ -84,6 +84,16 @@ dsh --profile web --dump-config | grep -n "workspace-kit"
 
 > Also usable as a monorepo subdirectory (e.g. `plugins/dsh-workspace-kit`): the install script walks up from `package.json` to find the plugin directory, so both layouts need no command changes.
 
+## Configuration
+
+`/workspace-find` and `/workspace-list` are registered in the chat's slash menu by default. To keep the menu short, set `slashCommands: false` under the Loader row's `config:` in your profile patch (`~/.dsh/profiles/<profile>/cordis.patch.yml`). The model tools `workspace_find` / `workspace_list` stay registered, so agents can still locate workspaces. It is read at activation, so restart dsh after changing it:
+
+```yaml
+- id: workspace-kit
+  config:
+    slashCommands: false
+```
+
 ## Package / distribute (optional)
 
 ```bash

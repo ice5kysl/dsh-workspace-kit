@@ -43,7 +43,7 @@ const pms = fakeWorkspace({
   sessionIds: ['s3'],
 })
 
-function applyKit(workspaces) {
+function applyKit(workspaces, config) {
   const tools = []
   const commands = []
   apply({
@@ -51,7 +51,7 @@ function applyKit(workspaces) {
     workspaceRegistry: { list: () => workspaces },
     tools: { register: (tool) => { tools.push(tool) } },
     commands: { register: (command) => { commands.push(command) } },
-  })
+  }, config)
   return { tools, commands }
 }
 
@@ -85,6 +85,14 @@ await check('registers exactly the two model tools', () => {
 
 await check('registers exactly the two slash commands', () => {
   assert.deepEqual(commands.map((command) => command.name), ['workspace-find', 'workspace-list'])
+})
+
+await check('slashCommands: false skips the slash commands but keeps the model tools', () => {
+  const off = applyKit([demo, pms], { slashCommands: false })
+  assert.deepEqual(off.commands.map((command) => command.name), [])
+  assert.deepEqual(off.tools.map((tool) => tool.name), ['workspace_find', 'workspace_list'])
+  const on = applyKit([demo, pms], { slashCommands: true })
+  assert.deepEqual(on.commands.map((command) => command.name), ['workspace-find', 'workspace-list'])
 })
 
 await check('workspace_find metadata: required query param, text output render', () => {

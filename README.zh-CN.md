@@ -83,6 +83,16 @@ dsh --profile web --dump-config | grep -n "workspace-kit"
 > 也支持作为 monorepo 子目录使用（如 `plugins/dsh-workspace-kit`）：
 > 安装脚本按 `package.json` 自动向上定位插件目录，两种布局都无需改命令。
 
+## 配置
+
+`/workspace-find` 与 `/workspace-list` 默认会注册到聊天的斜杠菜单。想让菜单更短，可在 profile patch（`~/.dsh/profiles/<profile>/cordis.patch.yml`）里该 Loader 行的 `config:` 下写 `slashCommands: false`。模型工具 `workspace_find` / `workspace_list` 仍会注册，智能体照样能定位工作区。该项在激活时读取，改完需重启 dsh：
+
+```yaml
+- id: workspace-kit
+  config:
+    slashCommands: false
+```
+
 ## 打包 / 分发（可选）
 
 ```bash
